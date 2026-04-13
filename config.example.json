@@ -1,0 +1,15 @@
+{
+  "llm_base_url": "https://openrouter.ai/api/v1",
+  "llm_api_key": "YOUR_OPENROUTER_API_KEY",
+  "llm_model": "openai/gpt-4o-mini",
+  "elevenlabs_api_key": "YOUR_ELEVENLABS_API_KEY (optional)",
+  "elevenlabs_voice_id": "YOUR_VOICE_ID (optional)",
+  "tts_provider": "edge",
+  "edge_voice": "de-DE-ConradNeural",
+  "user_name": "YOUR_NAME",
+  "user_address": "Sir",
+  "city": "YOUR_CITY",
+  "ha_url": "http://YOUR_HA_IP:8123",
+  "ha_token": "YOUR_HA_LONG_LIVED_TOKEN",
+  "clawbot_webhook_secret": "YOUR_SECRET"
+}

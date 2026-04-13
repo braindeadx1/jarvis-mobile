@@ -1,0 +1,322 @@
+/* ===== Jarvis Mobile PWA — Dark Iron Man Theme ===== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0a0a0f;
+    color: #e0e8f0;
+    height: 100dvh;
+    overflow: hidden;
+    user-select: none;
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* --- Top Bar --- */
+#top-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    font-size: 13px;
+    color: #6a7a8a;
+}
+
+#connection-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ff4444;
+    transition: background 0.3s;
+}
+
+#connection-dot.connected {
+    background: #44ff88;
+}
+
+/* --- Reactor (Hauptelement) --- */
+#reactor-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+}
+
+#reactor {
+    position: relative;
+    width: 180px;
+    height: 180px;
+    transition: all 0.3s;
+}
+
+.reactor-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid rgba(80, 160, 255, 0.3);
+}
+
+.ring-outer {
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    animation: spin 8s linear infinite;
+    border-style: dashed;
+}
+
+.ring-middle {
+    width: 70%;
+    height: 70%;
+    top: 15%;
+    left: 15%;
+    animation: spin 5s linear infinite reverse;
+    border-color: rgba(80, 160, 255, 0.5);
+}
+
+.ring-inner {
+    width: 40%;
+    height: 40%;
+    top: 30%;
+    left: 30%;
+    animation: spin 3s linear infinite;
+    border-color: rgba(80, 160, 255, 0.7);
+}
+
+.reactor-core {
+    position: absolute;
+    width: 22%;
+    height: 22%;
+    top: 39%;
+    left: 39%;
+    border-radius: 50%;
+    background: radial-gradient(circle, #80c8ff 0%, #3090ff 50%, #1060c0 100%);
+    box-shadow: 0 0 20px rgba(80, 160, 255, 0.5), 0 0 60px rgba(80, 160, 255, 0.2);
+}
+
+/* Reactor States */
+#reactor.idle .reactor-core {
+    box-shadow: 0 0 20px rgba(80, 160, 255, 0.3), 0 0 40px rgba(80, 160, 255, 0.1);
+}
+
+#reactor.listening {
+    transform: scale(1.05);
+}
+
+#reactor.listening .reactor-core {
+    background: radial-gradient(circle, #80ffb0 0%, #30ff70 50%, #10c040 100%);
+    box-shadow: 0 0 30px rgba(80, 255, 120, 0.6), 0 0 80px rgba(80, 255, 120, 0.3);
+    animation: pulse-core 1s ease-in-out infinite;
+}
+
+#reactor.listening .reactor-ring {
+    border-color: rgba(80, 255, 120, 0.5);
+}
+
+#reactor.thinking {
+    transform: scale(1.02);
+}
+
+#reactor.thinking .reactor-core {
+    background: radial-gradient(circle, #ffd080 0%, #ff9030 50%, #c06010 100%);
+    box-shadow: 0 0 30px rgba(255, 180, 80, 0.6), 0 0 80px rgba(255, 180, 80, 0.3);
+    animation: pulse-core 0.5s ease-in-out infinite;
+}
+
+#reactor.thinking .reactor-ring {
+    border-color: rgba(255, 180, 80, 0.5);
+}
+
+#reactor.speaking .reactor-core {
+    background: radial-gradient(circle, #80c8ff 0%, #3090ff 50%, #1060c0 100%);
+    box-shadow: 0 0 40px rgba(80, 160, 255, 0.8), 0 0 100px rgba(80, 160, 255, 0.4);
+    animation: pulse-core 0.8s ease-in-out infinite;
+}
+
+#reactor.searching .reactor-core {
+    background: radial-gradient(circle, #d080ff 0%, #9030ff 50%, #6010c0 100%);
+    box-shadow: 0 0 30px rgba(180, 80, 255, 0.6), 0 0 80px rgba(180, 80, 255, 0.3);
+    animation: pulse-core 0.3s ease-in-out infinite;
+}
+
+#reactor.searching .reactor-ring {
+    border-color: rgba(180, 80, 255, 0.5);
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes pulse-core {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.15); }
+}
+
+#status-text {
+    font-size: 14px;
+    color: #6a8aaa;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    text-align: center;
+}
+
+/* --- Antwort-Bereich --- */
+#response-area {
+    min-height: 80px;
+    max-height: 30vh;
+    overflow-y: auto;
+    padding: 0 24px 16px;
+}
+
+#response-text {
+    font-size: 15px;
+    line-height: 1.6;
+    color: #b0c8e0;
+    text-align: center;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.4s, transform 0.4s;
+}
+
+#response-text.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+#response-text.notification {
+    border-left: 3px solid #50a0ff;
+    padding-left: 12px;
+    color: #80c8ff;
+}
+
+/* --- Controls --- */
+#controls {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    padding: 16px 20px 24px;
+}
+
+#controls button {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: 2px solid rgba(80, 160, 255, 0.3);
+    background: rgba(80, 160, 255, 0.08);
+    color: #80a8d0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+#controls button svg {
+    width: 24px;
+    height: 24px;
+}
+
+#controls button:active {
+    transform: scale(0.9);
+    background: rgba(80, 160, 255, 0.2);
+}
+
+#controls button.active {
+    border-color: #50a0ff;
+    background: rgba(80, 160, 255, 0.2);
+    color: #80c8ff;
+    box-shadow: 0 0 15px rgba(80, 160, 255, 0.3);
+}
+
+#btn-talk {
+    width: 72px;
+    height: 72px;
+    border-width: 3px;
+}
+
+#btn-talk svg {
+    width: 32px;
+    height: 32px;
+}
+
+#btn-talk.recording {
+    border-color: #44ff88;
+    background: rgba(80, 255, 120, 0.15);
+    color: #80ffb0;
+    box-shadow: 0 0 20px rgba(80, 255, 120, 0.3);
+    animation: pulse-btn 1s ease-in-out infinite;
+}
+
+@keyframes pulse-btn {
+    0%, 100% { box-shadow: 0 0 20px rgba(80, 255, 120, 0.3); }
+    50% { box-shadow: 0 0 40px rgba(80, 255, 120, 0.5); }
+}
+
+/* --- Kamera Overlay --- */
+#camera-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+}
+
+#camera-overlay.hidden {
+    display: none;
+}
+
+#camera-preview {
+    flex: 1;
+    object-fit: cover;
+    width: 100%;
+}
+
+#camera-controls {
+    display: flex;
+    gap: 16px;
+    padding: 20px;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.8);
+}
+
+#camera-controls button {
+    padding: 14px 28px;
+    border-radius: 25px;
+    border: 2px solid rgba(80, 160, 255, 0.5);
+    background: rgba(80, 160, 255, 0.1);
+    color: #80c8ff;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+#btn-capture {
+    background: rgba(80, 160, 255, 0.25) !important;
+    border-color: #50a0ff !important;
+}
+
+/* --- Scrollbar --- */
+#response-area::-webkit-scrollbar {
+    width: 3px;
+}
+
+#response-area::-webkit-scrollbar-thumb {
+    background: rgba(80, 160, 255, 0.3);
+    border-radius: 3px;
+}

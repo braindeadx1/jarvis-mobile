@@ -1,0 +1,107 @@
+entity_id,friendly_name,room,type,watch,notes
+# ===== LICHT =====
+light.arbeitsbereich,Arbeitszimmer Licht,Arbeitszimmer,light,no,Shelly RGBW Hauptlicht
+light.arbeitsbereich_2,Arbeitszimmer Decke,Arbeitszimmer,light,no,
+light.arbeitsbereich_channel_2,Arbeitszimmer Kanal 2,Arbeitszimmer,light,no,
+light.arbeitsbereich_channel_3,Arbeitszimmer Kanal 3,Arbeitszimmer,light,no,
+light.arbeitsbereich_channel_4,Arbeitszimmer Kanal 4,Arbeitszimmer,light,no,
+light.treppenhaus,Treppenhaus Licht,Treppenhaus,light,no,
+light.wintergarten_channel_1,Wintergarten Hauptlicht,Wintergarten,light,no,
+light.wintergarten_channel_2,Wintergarten Kanal 2,Wintergarten,light,no,
+light.wintergarten_channel_3,Wintergarten Kanal 3,Wintergarten,light,no,
+light.wintergarten_channel_4,Wintergarten Kanal 4,Wintergarten,light,no,
+light.wled_wohnzimmer,WLED Wohnzimmer,Wohnzimmer,light,no,LED-Strip
+light.bassbox,Bassbox LED,Wohnzimmer,light,no,
+# ===== LICHT-GRUPPEN (Homematic) =====
+switch.zuhause_hauptlicht_wohnzimmer_group,Wohnzimmer Hauptlicht,Wohnzimmer,light_group,no,Homematic Gruppe
+switch.zuhause_nebenlicht_wohnzimmer_group,Wohnzimmer Nebenlicht,Wohnzimmer,light_group,no,
+switch.zuhause_hauptlicht_esszimmer_group,Esszimmer Hauptlicht,Esszimmer,light_group,no,
+switch.zuhause_hauptlicht_wintergarten_group,Wintergarten Hauptlicht,Wintergarten,light_group,no,
+switch.zuhause_kuchenlicht_group,Kueche Hauptlicht,Kueche,light_group,no,
+switch.zuhause_hauptlicht_badezimmer_group,Badezimmer Hauptlicht,Badezimmer,light_group,no,
+switch.zuhause_badezimmer_licht_group,Badezimmer Licht,Badezimmer,light_group,no,
+switch.zuhause_kellerlicht_group,Keller Licht,Keller,light_group,no,
+switch.zuhause_kellerlicht,Kellerlicht,Keller,light_group,no,
+switch.zuhause_licht_erdgeschoss_group,Erdgeschoss alle Lichter,Erdgeschoss,light_group,no,
+switch.zuhause_led_licht_wintergarten,LED Wintergarten,Wintergarten,light_group,no,
+switch.zuhause_abendlicht,Abendlicht,Wohnzimmer,light_group,no,Stimmungsbeleuchtung
+# ===== KLIMA / HEIZUNG (Homematic) =====
+climate.zuhause_wohnzimmer,Heizung Wohnzimmer,Wohnzimmer,climate,yes,Homematic Thermostat
+climate.zuhause_esszimmer,Heizung Esszimmer,Esszimmer,climate,yes,
+climate.zuhause_kuche,Heizung Kueche,Kueche,climate,yes,
+climate.zuhause_arbeitszimmer,Heizung Arbeitszimmer,Arbeitszimmer,climate,yes,
+climate.zuhause_schlafzimmer,Heizung Schlafzimmer,Schlafzimmer,climate,yes,
+climate.zuhause_kinderzimmer,Heizung Kinderzimmer,Kinderzimmer,climate,yes,
+climate.zuhause_treppenhaus,Heizung Treppenhaus,Treppenhaus,climate,yes,
+climate.zuhause_wintergarten,Heizung Wintergarten,Wintergarten,climate,yes,
+climate.zuhause_badezimmer,Heizung Badezimmer,Badezimmer,climate,yes,
+climate.zuhause_gaste_wc,Heizung Gaeste WC,Gaeste WC,climate,yes,
+climate.zuhause_gastezimmer,Heizung Gaestezimmer,Gaestezimmer,climate,yes,
+# ===== TEMPERATUR-SENSOREN (Homematic) =====
+sensor.zuhause_wohnzimmer_temperature,Temperatur Wohnzimmer,Wohnzimmer,temperature,yes,
+sensor.zuhause_wandthermostat_wohnzimmer_temperature,Wandthermostat Wohnzimmer,Wohnzimmer,temperature,no,
+sensor.zuhause_esszimmer_temperature_3,Temperatur Esszimmer,Esszimmer,temperature,yes,
+sensor.zuhause_esszimmer_rbg_temperature,Esszimmer RBG Temp,Esszimmer,temperature,no,
+sensor.zuhause_heizkorperthermostat_evo_neu_temperature,Temperatur Kueche,Kueche,temperature,yes,
+sensor.zuhause_kuche_rbg_temperature_4,Kueche RBG Temp,Kueche,temperature,no,
+sensor.zuhause_arbeitszimmer_temperature_2,Temperatur Arbeitszimmer,Arbeitszimmer,temperature,yes,
+sensor.zuhause_schlafzimmer_temperature_4,Temperatur Schlafzimmer,Schlafzimmer,temperature,yes,
+sensor.zuhause_kinderzimmer_temperature,Temperatur Kinderzimmer,Kinderzimmer,temperature,yes,
+sensor.zuhause_treppenhaus_temperature_3,Temperatur Treppenhaus,Treppenhaus,temperature,yes,
+sensor.zuhause_wandthermostat_wintergarten_temperature,Temperatur Wintergarten,Wintergarten,temperature,yes,
+sensor.zuhause_wintergarten_links_temperature,Wintergarten Links,Wintergarten,temperature,no,
+sensor.zuhause_wintergarten_rechts_temperature,Wintergarten Rechts,Wintergarten,temperature,no,
+sensor.zuhause_badezimmer_temperature_2,Temperatur Badezimmer,Badezimmer,temperature,yes,
+sensor.zuhause_wandthermostat_badezimmer_temperature,Wandthermostat Badezimmer,Badezimmer,temperature,no,
+sensor.zuhause_gaste_wc_temperature,Temperatur Gaeste WC,Gaeste WC,temperature,no,
+sensor.zuhause_gastezimmer_temperature,Temperatur Gaestezimmer,Gaestezimmer,temperature,no,
+sensor.zuhause_wandthermostat_gastezimmer_temperature,Wandthermostat Gaestezimmer,Gaestezimmer,temperature,no,
+sensor.zuhause_wetterstation_temperature,Aussentemperatur,Aussen,temperature,yes,Homematic Wetterstation
+# ===== ROLLADEN / MARKISE =====
+cover.zuhause_rolladen_wohnzimmer,Rolladen Wohnzimmer,Wohnzimmer,cover,no,
+cover.zuhause_rolladen_esszimmer,Rolladen Esszimmer,Esszimmer,cover,no,
+cover.zuhause_rolladen_kuche,Rolladen Kueche,Kueche,cover,no,
+cover.zuhause_rolladen_arbeitszimmer,Rolladen Arbeitszimmer,Arbeitszimmer,cover,no,
+cover.zuhause_rolladen_wintergarten,Rolladen Wintergarten,Wintergarten,cover,no,
+cover.zuhause_rolladen_badezimmer,Rolladen Badezimmer,Badezimmer,cover,no,
+cover.zuhause_rollladen_schlafzimmer,Rolladen Schlafzimmer,Schlafzimmer,cover,no,
+cover.zuhause_rollladen_kinderzimmer_shuttergroup,Rolladen Kinderzimmer,Kinderzimmer,cover,no,
+cover.zuhause_rollladen_gastezimmer_shuttergroup,Rolladen Gaestezimmer,Gaestezimmer,cover,no,
+cover.zuhause_markise,Markise,Aussenanlagen,cover,no,
+cover.zuhause_rollladen_obergeschoss_shuttergroup,Alle Rolladen OG,Obergeschoss,cover,no,
+# ===== SCHALTER / STECKDOSEN =====
+switch.zuhause_steckdose_aussen,Steckdose Aussen,Aussenanlagen,switch,no,
+switch.zuhause_steckdose,Steckdose Wintergarten,Wintergarten,switch,no,
+switch.zuhause_messaktor,HMIP Steckdose,Sonstige,switch,no,
+switch.zuhause_zirkulationspumpe,Zirkulationspumpe,Keller,switch,no,
+switch.gartenpumpe_gartenpumpe,Gartenpumpe,Aussenanlagen,switch,no,
+switch.heizstab_switch_0,Heizstab,Keller,switch,yes,Warmwasser
+switch.shellyplus1pm_a8032ab18678_switch_0,Klimaanlage Wintergarten,Wintergarten,switch,yes,
+switch.shellyplus1pm_84cca87709b0_switch_0,Klimaanlage Schlafzimmer,Schlafzimmer,switch,no,
+# ===== GARTEN =====
+switch.esp32_relaysboard_4fach_garten_gartensteckdosen_kreis_1,Gartensteckdosen 1,Aussenanlagen,switch,no,
+switch.esp32_relaysboard_4fach_garten_gartensteckdosen_kreis_2,Gartensteckdosen 2,Aussenanlagen,switch,no,
+switch.esp32_relaysboard_4fach_garten_kirschbaum_beleuchtung,Kirschbaum Beleuchtung,Aussenanlagen,switch,no,
+switch.esp32_relaysboard_4fach_garten_wegebeleuchtung_gartentor,Wegebeleuchtung Gartentor,Aussenanlagen,switch,no,
+# ===== FENSTER / TUEREN (watch fuer Benachrichtigungen) =====
+binary_sensor.zuhause_eingang,Haustuer,Eingang,door,yes,
+binary_sensor.zuhause_keller_tur,Kellertuer,Keller,door,yes,
+binary_sensor.zuhause_turkontakt_aussentreppe,Aussentreppentuer,Aussen,door,yes,
+binary_sensor.zuhause_garagentor_sensors,Garagentor,Garage,door,yes,
+binary_sensor.zuhause_schlafzimmer_fenster_2,Schlafzimmer Fenster,Schlafzimmer,window,no,
+binary_sensor.zuhause_arbeitszimmer_fensterr_2,Arbeitszimmer Fenster,Arbeitszimmer,window,no,
+binary_sensor.zuhause_wintergarten_fenster,Wintergarten Fenster,Wintergarten,window,no,
+binary_sensor.zuhause_gaste_wc_fenster,Gaeste WC Fenster,Gaeste WC,window,no,
+binary_sensor.zuhause_fenster_gastezimmer,Gaestezimmer Fenster,Gaestezimmer,window,no,
+binary_sensor.zuhause_fensterkontakt_kinderzimmer,Kinderzimmer Fenster,Kinderzimmer,window,no,
+# ===== KAMERAS / SICHERHEIT =====
+binary_sensor.vordertur_person_detected,Vordertuer Person,Eingang,security,yes,Eufy Kamera
+binary_sensor.hinterhof_person_detected,Hinterhof Person,Aussenanlagen,security,yes,
+binary_sensor.seitentur_person_detected_2,Seitentuer Person,Aussenanlagen,security,yes,
+binary_sensor.garage_person_detected,Garage Person,Garage,security,yes,
+binary_sensor.zuhause_taster_klingel,Tuerklingel,Eingang,security,yes,
+# ===== WASSER-SENSOREN =====
+binary_sensor.zuhause_wassersensor_heizungskeller,Wasser Heizungskeller,Keller,water,yes,Alarm!
+binary_sensor.zuhause_wassersensor_keller_trinkwasser_speicher,Wasser Trinkwasserspeicher,Keller,water,yes,
+binary_sensor.zuhause_wassersensor_waschkuche_abfluss,Wasser Waschkueche Abfluss,Keller,water,yes,
+binary_sensor.zuhause_wassersensor_waschkuche_ausgang,Wasser Waschkueche Ausgang,Keller,water,yes,
