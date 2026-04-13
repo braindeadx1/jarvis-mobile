@@ -283,6 +283,33 @@ async def broadcast_notification(text: str, speak: bool = True):
 # ---------------------------------------------------------------------------
 # HA State Change Handler (proaktive Meldungen)
 # ---------------------------------------------------------------------------
+# Cooldown: gleiche Entitaet wird erst nach X Sekunden erneut gemeldet
+NOTIFICATION_COOLDOWN = 300  # 5 Minuten
+_last_notification: dict[str, float] = {}
+
+# Fenster-Meldungen: HA-Schalter der steuert ob Fenster gemeldet werden
+FENSTER_MELDUNGEN_ENTITY = "input_boolean.fenster_meldungen"
+
+
+async def _is_fenster_meldungen_aktiv() -> bool:
+    """Prueft ob der HA-Schalter 'Fenster-Meldungen aktiv' eingeschaltet ist."""
+    if not ha:
+        return False
+    state = await ha.get_state(FENSTER_MELDUNGEN_ENTITY)
+    return state is not None and state.get("state") == "on"
+
+
+def _check_cooldown(entity_id: str, cooldown: int = NOTIFICATION_COOLDOWN) -> bool:
+    """Prueft ob die Entitaet innerhalb des Cooldowns bereits gemeldet wurde.
+    Gibt True zurueck wenn gemeldet werden darf."""
+    now = time.time()
+    last = _last_notification.get(entity_id, 0)
+    if now - last < cooldown:
+        return False
+    _last_notification[entity_id] = now
+    return True
+
+
 async def on_ha_state_change(entity_id: str, old_state: str, new_state: str, attrs: dict):
     """Wird aufgerufen wenn sich ein ueberwachtes HA-Geraet aendert."""
     dev = registry.by_id.get(entity_id)
@@ -290,25 +317,32 @@ async def on_ha_state_change(entity_id: str, old_state: str, new_state: str, att
         return
 
     message = None
+    cooldown = NOTIFICATION_COOLDOWN
 
-    # Tuerklingel
+    # Tuerklingel — kein Cooldown, immer melden
     if dev.type == "security" and "klingel" in dev.friendly_name.lower() and new_state == "on":
+        cooldown = 30  # Nur 30s Cooldown bei Klingel
         message = f"{USER_ADDRESS}, es klingelt an der Tuer. Shall I prepare the welcome mat?"
 
-    # Person erkannt (Kameras)
+    # Person erkannt (Kameras) — 5 Min Cooldown
     elif dev.type == "security" and "person" in dev.friendly_name.lower() and new_state == "on":
         message = f"{USER_ADDRESS}, Bewegung erkannt: {dev.friendly_name}."
 
-    # Wasser-Alarm!
+    # Wasser-Alarm! — IMMER melden, kein Cooldown
     elif dev.type == "water" and new_state == "on":
+        cooldown = 0
         message = f"ACHTUNG {USER_ADDRESS}! Wasser-Alarm bei {dev.friendly_name}! Das ist definitiv nicht geplant."
 
-    # Haustuer / Kellertuer
-    elif dev.type == "door" and new_state == "on":
-        message = f"{USER_ADDRESS}, die {dev.friendly_name} wurde geoeffnet."
+    # Fenster/Tueren — NUR wenn HA-Schalter aktiv
+    elif dev.type in ("door", "window") and new_state == "on":
+        if await _is_fenster_meldungen_aktiv():
+            message = f"{USER_ADDRESS}, {dev.friendly_name} wurde geoeffnet."
+        else:
+            return  # Schalter aus → keine Meldung
 
-    # Temperatur-Alarm (zu kalt/zu warm)
+    # Temperatur-Alarm (zu kalt/zu warm) — 30 Min Cooldown
     elif dev.type == "climate":
+        cooldown = 1800  # 30 Minuten
         current = attrs.get("current_temperature")
         if current and isinstance(current, (int, float)):
             if current < 10:
@@ -317,6 +351,10 @@ async def on_ha_state_change(entity_id: str, old_state: str, new_state: str, att
                 message = f"{USER_ADDRESS}, {dev.room} hat {current}°C erreicht. Etwas tropisch, wenn Sie mich fragen."
 
     if message:
+        # Cooldown pruefen (Wasser-Alarm umgeht Cooldown)
+        if cooldown > 0 and not _check_cooldown(entity_id, cooldown):
+            print(f"[jarvis] Cooldown aktiv fuer {dev.friendly_name}, uebersprungen", flush=True)
+            return
         print(f"[jarvis] Proaktiv: {message}", flush=True)
         await broadcast_notification(message)
 
@@ -623,14 +661,15 @@ async def clawbot_webhook(request: Request):
                 {
                     "role": "system",
                     "content": (
-                        f"Du bist Jarvis. Dir wurde eine eingehende {channel}-Nachricht "
-                        f"fuer {USER_ADDRESS} gemeldet. Kuendige sie kurz an (1 Satz). "
+                        f"Du bist Jarvis. Deine Kollegin Friday (ein anderer KI-Assistent) "
+                        f"hat eine {channel}-Nachricht fuer {USER_ADDRESS} weitergeleitet. "
+                        f"Kuendige sie kurz an (1 Satz). Nenne die Quelle 'Friday'. "
                         f"KEINE Tags in eckigen Klammern."
                     ),
                 },
                 {
                     "role": "user",
-                    "content": f"Von {sender}: {message}",
+                    "content": f"Friday meldet von {sender}: {message}",
                 },
             ],
         )
