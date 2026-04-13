@@ -55,6 +55,20 @@ function connectWS() {
 }
 
 function handleMessage(data) {
+  // Config mit Modell-Liste vom Server
+  if (data.type === "config") {
+    if (data.models) {
+      buildModelSelector(data.models, data.current_model);
+    }
+  }
+
+  // Modell-Wechsel bestaetigt
+  if (data.type === "model_changed") {
+    const sel = document.getElementById("model-select");
+    if (sel) sel.value = data.model;
+    showResponse(`Modell gewechselt: ${data.name}`);
+  }
+
   if (data.type === "status") {
     const labels = {
       thinking: "Denkt nach...",
@@ -317,6 +331,45 @@ function onShakeDetected() {
     navigator.vibrate(100);
   }
   startListening();
+}
+
+// ===== Model Selector =====
+function buildModelSelector(models, currentModel) {
+  const container = document.getElementById("model-container");
+  if (!container) return;
+
+  // Bestehenden Selector entfernen falls vorhanden
+  container.innerHTML = "";
+
+  const select = document.createElement("select");
+  select.id = "model-select";
+
+  const tierLabels = { budget: "💰 Budget", mid: "⚡ Mittelklasse", premium: "🔥 Premium" };
+  let currentTier = "";
+
+  for (const m of models) {
+    if (m.tier !== currentTier) {
+      currentTier = m.tier;
+      const optgroup = document.createElement("optgroup");
+      optgroup.label = tierLabels[m.tier] || m.tier;
+      select.appendChild(optgroup);
+    }
+
+    const opt = document.createElement("option");
+    opt.value = m.id;
+    opt.textContent = `${m.name}  ·  $${m.input} / $${m.output}`;
+    if (m.id === currentModel) opt.selected = true;
+    // Append to last optgroup
+    select.lastElementChild.appendChild(opt);
+  }
+
+  select.addEventListener("change", () => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: "model_change", model: select.value }));
+    }
+  });
+
+  container.appendChild(select);
 }
 
 // ===== Event Listeners =====

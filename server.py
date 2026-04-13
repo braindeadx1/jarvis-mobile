@@ -46,6 +46,25 @@ HA_TOKEN = config.get("ha_token", "")
 # ClawBot Webhook
 CLAWBOT_WEBHOOK_SECRET = config.get("clawbot_webhook_secret", "jarvis-secret-2026")
 
+# ---------------------------------------------------------------------------
+# Verfuegbare LLM-Modelle (mit OpenRouter-Preisen pro Million Tokens)
+# ---------------------------------------------------------------------------
+AVAILABLE_MODELS = [
+    {"id": "openai/gpt-4o-mini", "name": "GPT-4o Mini", "input": 0.15, "output": 0.60, "tier": "budget"},
+    {"id": "google/gemini-2.5-flash", "name": "Gemini 2.5 Flash", "input": 0.15, "output": 0.60, "tier": "budget"},
+    {"id": "meta-llama/llama-4-maverick", "name": "Llama 4 Maverick", "input": 0.20, "output": 0.60, "tier": "budget"},
+    {"id": "openai/gpt-4.1-mini", "name": "GPT-4.1 Mini", "input": 0.40, "output": 1.60, "tier": "mid"},
+    {"id": "anthropic/claude-3.5-haiku", "name": "Claude Haiku 3.5", "input": 0.80, "output": 4.00, "tier": "mid"},
+    {"id": "anthropic/claude-haiku-4-5-20251001", "name": "Claude Haiku 4.5", "input": 0.80, "output": 4.00, "tier": "mid"},
+    {"id": "google/gemini-2.5-pro", "name": "Gemini 2.5 Pro", "input": 1.25, "output": 10.00, "tier": "mid"},
+    {"id": "openai/gpt-4.1", "name": "GPT-4.1", "input": 2.00, "output": 8.00, "tier": "premium"},
+    {"id": "anthropic/claude-sonnet-4", "name": "Claude Sonnet 4", "input": 3.00, "output": 15.00, "tier": "premium"},
+    {"id": "anthropic/claude-opus-4", "name": "Claude Opus 4", "input": 15.00, "output": 75.00, "tier": "premium"},
+]
+
+# Aktives Modell pro Session (session_id -> model_id)
+session_models: dict[str, str] = {}
+
 # OpenRouter headers
 _llm_headers = {}
 if "openrouter.ai" in LLM_BASE_URL:
@@ -365,11 +384,18 @@ async def on_ha_state_change(entity_id: str, old_state: str, new_state: str, att
 conversations: dict[str, list] = {}
 
 
+def _get_model(session_id: str) -> str:
+    """Gibt das aktive LLM-Modell fuer eine Session zurueck."""
+    return session_models.get(session_id, LLM_MODEL)
+
+
 async def process_message(
     session_id: str, user_text: str, ws: WebSocket, image_data: str | None = None
 ):
     if session_id not in conversations:
         conversations[session_id] = []
+
+    current_model = _get_model(session_id)
 
     # Wetter bei Aktivierung neu laden
     if "jarvis" in user_text.lower() or "aktivier" in user_text.lower():
@@ -386,7 +412,7 @@ async def process_message(
                 # LLM formuliert die Antwort im Jarvis-Stil
                 try:
                     style_resp = await ai.chat.completions.create(
-                        model=LLM_MODEL,
+                        model=current_model,
                         max_tokens=200,
                         messages=[
                             {
@@ -441,7 +467,7 @@ async def process_message(
 
     try:
         response = await ai.chat.completions.create(
-            model=LLM_MODEL,
+            model=current_model,
             max_tokens=400,
             messages=[{"role": "system", "content": build_system_prompt()}, *history],
         )
@@ -484,7 +510,7 @@ async def process_message(
         if action_result and "fehlgeschlagen" not in action_result:
             try:
                 summary_resp = await ai.chat.completions.create(
-                    model=LLM_MODEL,
+                    model=current_model,
                     max_tokens=250,
                     messages=[
                         {
@@ -593,12 +619,32 @@ async def websocket_endpoint(ws: WebSocket):
     await ws.accept()
     session_id = str(id(ws))
     active_clients[session_id] = ws
+    session_models[session_id] = LLM_MODEL  # Default-Modell
     print(f"[jarvis] Client verbunden: {session_id}", flush=True)
+
+    # Verfuegbare Modelle und aktuelles Modell an Client senden
+    await ws.send_json({
+        "type": "config",
+        "models": AVAILABLE_MODELS,
+        "current_model": LLM_MODEL,
+    })
 
     try:
         while True:
             data = await ws.receive_json()
             msg_type = data.get("type", "text")
+
+            if msg_type == "model_change":
+                new_model = data.get("model", "")
+                valid_ids = [m["id"] for m in AVAILABLE_MODELS]
+                if new_model in valid_ids:
+                    session_models[session_id] = new_model
+                    model_name = next(m["name"] for m in AVAILABLE_MODELS if m["id"] == new_model)
+                    print(f"  Modell gewechselt: {model_name} ({new_model})", flush=True)
+                    await ws.send_json({"type": "model_changed", "model": new_model, "name": model_name})
+                else:
+                    await ws.send_json({"type": "error", "message": f"Unbekanntes Modell: {new_model}"})
+                continue
 
             if msg_type == "image":
                 image_data = data.get("image", "")
@@ -615,6 +661,7 @@ async def websocket_endpoint(ws: WebSocket):
     except WebSocketDisconnect:
         active_clients.pop(session_id, None)
         conversations.pop(session_id, None)
+        session_models.pop(session_id, None)
         print(f"[jarvis] Client getrennt: {session_id}", flush=True)
 
 
