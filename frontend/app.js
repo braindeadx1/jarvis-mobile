@@ -19,6 +19,7 @@ const connectionDot = document.getElementById("connection-dot");
 const connectionText = document.getElementById("connection-text");
 const btnTalk = document.getElementById("btn-talk");
 const btnCamera = document.getElementById("btn-camera");
+const btnStop = document.getElementById("btn-stop");
 const btnShake = document.getElementById("btn-shake");
 const cameraOverlay = document.getElementById("camera-overlay");
 const cameraPreview = document.getElementById("camera-preview");
@@ -381,6 +382,24 @@ btnTalk.addEventListener("click", () => {
   } else {
     startListening();
   }
+});
+
+// Stop Button: Audio stoppen, Spracherkennung abbrechen, Status reset
+btnStop.addEventListener("click", () => {
+  // Audio stoppen
+  audioQueue = [];
+  isPlayingAudio = false;
+  document.querySelectorAll("audio").forEach((a) => { a.pause(); a.remove(); });
+
+  // Spracherkennung stoppen
+  if (recognition && isListening) {
+    recognition.abort();
+    isListening = false;
+    btnTalk.classList.remove("recording");
+  }
+
+  setStatus("idle", "Bereit");
+  responseText.classList.remove("visible");
 });
 
 // Camera Button
