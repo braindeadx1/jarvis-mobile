@@ -364,10 +364,26 @@ async def on_ha_state_change(entity_id: str, old_state: str, new_state: str, att
         cooldown = 1800  # 30 Minuten
         current = attrs.get("current_temperature")
         if current and isinstance(current, (int, float)):
-            if current < 10:
+            if current < 15:
                 message = f"Achtung {USER_ADDRESS}, {dev.room} ist auf {current}°C gefallen. Rather chilly, wouldn't you say?"
-            elif current > 28:
+            elif current > 23:
                 message = f"{USER_ADDRESS}, {dev.room} hat {current}°C erreicht. Etwas tropisch, wenn Sie mich fragen."
+
+    # Aussentemperatur — Frostwarnung + Sonnenschutz
+    elif dev.type == "temperature" and entity_id == "sensor.zuhause_wetterstation_temperature":
+        cooldown = 3600  # 1 Stunde
+        try:
+            temp = float(new_state)
+            if temp <= 0:
+                message = f"Achtung {USER_ADDRESS}, draussen sind es {temp}°C. Das Wasserfass koennte einfrieren! I suggest immediate action."
+            elif temp > 24:
+                # Sonnenschutz automatisch aktivieren
+                if ha:
+                    await ha.call_service("automation", "trigger", "automation.sonnenschutz_aktivieren")
+                    print("[jarvis] Sonnenschutz automatisch aktiviert", flush=True)
+                message = f"{USER_ADDRESS}, es sind {temp}°C draussen. Ich habe den Sonnenschutz aktiviert."
+        except (ValueError, TypeError):
+            pass
 
     if message:
         # Cooldown pruefen (Wasser-Alarm umgeht Cooldown)

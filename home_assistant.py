@@ -417,28 +417,47 @@ def parse_ha_command(text: str, registry: DeviceRegistry) -> dict | None:
             return {"action": "room_status", "room": room}
 
     # Temperatur-Abfrage: "wie warm ist es im schlafzimmer"
-    temp_match = re.search(r"(?:wie warm|temperatur|wieviel grad).*?(?:im |in der |in |)(\w+)", t)
-    if temp_match:
-        room_query = temp_match.group(1)
-        devices = registry.find(room_query)
-        temp_devs = [d for d in devices if d.type == "temperature"]
-        if temp_devs:
-            return {"action": "get_temperature", "entity_id": temp_devs[0].entity_id, "room": temp_devs[0].room}
+    if any(p in t for p in ["wie warm", "wie kalt", "wieviel grad", "welche temperatur"]):
+        for room in registry.get_rooms():
+            if room.lower() in t:
+                temp_devs = [d for d in registry.get_room_devices(room) if d.type == "temperature"]
+                if temp_devs:
+                    return {"action": "get_temperature", "entity_id": temp_devs[0].entity_id, "room": room}
+        # Kein Raum erkannt -> alle Temperaturen
+        return {"action": "all_temperatures"}
 
-    # Licht/Schalter steuern
+    # Licht/Schalter steuern — Aktion erkennen
+    # Zuerst AUS pruefen (vor AN, weil "anmachen" sonst "aus" in "ausschalten" matcht)
     action = None
-    if any(p in t for p in ["mach an", "schalte an", "einschalten", "anmachen", "turn on", "licht an"]):
-        action = "turn_on"
-    elif any(p in t for p in ["mach aus", "schalte aus", "ausschalten", "ausmachen", "turn off", "licht aus"]):
+    off_patterns = ["aus", "ausschalten", "ausmachen", "abschalten", "turn off", "deaktivier"]
+    on_patterns = ["an", "einschalten", "anschalten", "anmachen", "turn on", "aktivier"]
+
+    # Pruefen ob AUS-Wort im Text vorkommt (als ganzes Wort)
+    words = re.findall(r'[a-zäöüß]+', t)
+    if any(w in off_patterns for w in words) or "mach" in words and "aus" in words:
         action = "turn_off"
+    elif any(w in on_patterns for w in words) or "mach" in words and "an" in words:
+        action = "turn_on"
     elif any(p in t for p in ["umschalten", "toggle", "wechsel"]):
         action = "toggle"
 
     # Rolladen
-    if any(p in t for p in ["rolladen hoch", "rolladen auf", "rollladen hoch", "rollladen auf"]):
+    if any(p in t for p in ["rolladen hoch", "rolladen auf", "rollladen hoch", "rollladen auf", "rolladen öffne", "rollladen öffne"]):
         action = "turn_on"  # open_cover
-    elif any(p in t for p in ["rolladen runter", "rolladen zu", "rollladen runter", "rollladen zu"]):
+    elif any(p in t for p in ["rolladen runter", "rolladen zu", "rollladen runter", "rollladen zu", "rolladen schlie", "rollladen schlie"]):
         action = "turn_off"  # close_cover
+    # "Rolladen X runter/hoch" — wenn Rolladen im Text aber Aktion noch nicht erkannt
+    if not action and ("rolladen" in t or "rollladen" in t):
+        if any(w in words for w in ["runter", "zu", "schliessen", "ab"]):
+            action = "turn_off"
+        elif any(w in words for w in ["hoch", "auf", "oeffnen", "rauf"]):
+            action = "turn_on"
+    # Markise
+    if not action and "markise" in t:
+        if any(w in words for w in ["rein", "einfahren", "ein", "zu", "schliessen"]):
+            action = "turn_off"  # close
+        elif any(w in words for w in ["raus", "ausfahren", "auf", "oeffnen"]):
+            action = "turn_on"  # open
 
     # Heizung
     temp_set = re.search(r"(?:heizung|temperatur).*?auf (\d+(?:[.,]\d+)?)", t)
