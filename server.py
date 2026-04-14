@@ -630,6 +630,112 @@ async def startup():
         print("[jarvis] HA WebSocket gestartet — lausche auf Aenderungen", flush=True)
 
 
+# ---------------------------------------------------------------------------
+# OpenAI-kompatibler Endpoint (fuer HA Conversation Agent)
+# ---------------------------------------------------------------------------
+@app.post("/v1/chat/completions")
+async def openai_chat_completions(request: Request):
+    """OpenAI-kompatibler Chat-Endpoint. HA's openai_conversation
+    Integration sendet den STT-Text hierher als Conversation Agent."""
+    try:
+        data = await request.json()
+    except Exception:
+        return JSONResponse({"error": "invalid json"}, status_code=400)
+
+    messages = data.get("messages", [])
+    user_text = ""
+    for msg in reversed(messages):
+        if msg.get("role") == "user":
+            user_text = msg.get("content", "")
+            break
+
+    if not user_text:
+        return JSONResponse({
+            "id": "jarvis-empty",
+            "choices": [{"message": {"role": "assistant", "content": "Kein Text erkannt."}, "finish_reason": "stop"}],
+            "model": "jarvis"
+        })
+
+    print(f"[voice] HA Pipeline: {user_text}", flush=True)
+
+    # Verarbeitung wie /api/voice aber ohne Auth (HA intern)
+    reply = ""
+
+    # HA-Befehle direkt
+    if ha:
+        ha_cmd = parse_ha_command(user_text, registry)
+        if ha_cmd:
+            ha_result = await execute_ha_command(ha_cmd)
+            if ha_result:
+                try:
+                    style_resp = await ai.chat.completions.create(
+                        model=LLM_MODEL, max_tokens=200,
+                        messages=[
+                            {"role": "system", "content": f"Du bist Jarvis, ein trockener britischer Butler. Formuliere folgende Smarthome-Aktion als kurze Bestaetigung (1-2 Saetze). Sprich den Nutzer als {USER_ADDRESS} an. KEINE Tags in eckigen Klammern."},
+                            {"role": "user", "content": ha_result},
+                        ],
+                    )
+                    reply = style_resp.choices[0].message.content or ha_result
+                except Exception:
+                    reply = ha_result
+
+    # LLM-Verarbeitung
+    if not reply:
+        session_id = "respeaker"
+        if session_id not in conversations:
+            conversations[session_id] = []
+        conversations[session_id].append({"role": "user", "content": user_text})
+        history = conversations[session_id][-16:]
+        try:
+            response = await ai.chat.completions.create(
+                model=LLM_MODEL, max_tokens=400,
+                messages=[{"role": "system", "content": build_system_prompt()}, *history],
+            )
+            reply = response.choices[0].message.content or ""
+            spoken_text, action = extract_action(reply)
+            if spoken_text:
+                reply = spoken_text
+            # Aktionen
+            if action:
+                action_result = ""
+                if action["type"] == "SEARCH":
+                    action_result = await web_search(action["payload"])
+                elif action["type"] == "HA_OVERVIEW" and ha:
+                    action_result = await ha.get_house_overview()
+                elif action["type"] == "HA_TEMPS" and ha:
+                    action_result = await ha.get_all_temperatures()
+                elif action["type"] == "HA_ROOM" and ha:
+                    action_result = await ha.get_room_status(action["payload"])
+                if action_result:
+                    try:
+                        summary_resp = await ai.chat.completions.create(
+                            model=LLM_MODEL, max_tokens=250,
+                            messages=[
+                                {"role": "system", "content": f"Du bist Jarvis. Fasse KURZ zusammen (max 3 Saetze), im Jarvis-Stil. Sprich als {USER_ADDRESS} an. KEINE Tags."},
+                                {"role": "user", "content": f"Fasse zusammen:\n\n{action_result}"},
+                            ],
+                        )
+                        reply = summary_resp.choices[0].message.content or action_result
+                    except Exception:
+                        reply = action_result
+            conversations[session_id].append({"role": "assistant", "content": reply})
+        except Exception as e:
+            print(f"  LLM ERROR: {e}", flush=True)
+            reply = f"Da scheint etwas schiefgelaufen zu sein, {USER_ADDRESS}."
+
+    # Auch an PWA broadcasten
+    await broadcast_notification(reply, speak=True)
+
+    print(f"[voice] Antwort: {reply[:100]}", flush=True)
+    return JSONResponse({
+        "id": "jarvis-voice",
+        "object": "chat.completion",
+        "choices": [{"index": 0, "message": {"role": "assistant", "content": reply}, "finish_reason": "stop"}],
+        "model": "jarvis",
+        "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+    })
+
+
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
     await ws.accept()
@@ -762,6 +868,123 @@ async def clawbot_webhook_silent(request: Request):
     notification = f"{sender} ({channel}): {message}"
     await broadcast_notification(notification, speak=False)
     return JSONResponse({"status": "delivered_silent", "clients": len(active_clients)})
+
+
+# ---------------------------------------------------------------------------
+# API: Voice Input (von HA ReSpeaker Satellite)
+# ---------------------------------------------------------------------------
+@app.post("/api/voice")
+async def voice_input(request: Request):
+    """Empfaengt transkribierten Text vom HA Voice Satellite (ReSpeaker).
+    Verarbeitet den Befehl wie eine normale Jarvis-Nachricht und
+    broadcastet die Antwort an alle PWA-Clients."""
+    try:
+        data = await request.json()
+    except Exception:
+        return JSONResponse({"error": "invalid json"}, status_code=400)
+
+    if data.get("secret") != CLAWBOT_WEBHOOK_SECRET:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+
+    text = data.get("text", "").strip()
+    if not text:
+        return JSONResponse({"error": "empty text"}, status_code=400)
+
+    print(f"[voice] ReSpeaker: {text}", flush=True)
+
+    # HA-Befehle direkt verarbeiten
+    if ha:
+        ha_cmd = parse_ha_command(text, registry)
+        if ha_cmd:
+            ha_result = await execute_ha_command(ha_cmd)
+            if ha_result:
+                try:
+                    style_resp = await ai.chat.completions.create(
+                        model=LLM_MODEL,
+                        max_tokens=200,
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": (
+                                    f"Du bist Jarvis, ein trockener britischer Butler. "
+                                    f"Formuliere folgende Smarthome-Aktion als kurze, "
+                                    f"sarkastische Bestaetigung (1-2 Saetze). "
+                                    f"Sprich den Nutzer als {USER_ADDRESS} an. "
+                                    f"KEINE Tags in eckigen Klammern."
+                                ),
+                            },
+                            {"role": "user", "content": ha_result},
+                        ],
+                    )
+                    reply = style_resp.choices[0].message.content or ha_result
+                except Exception:
+                    reply = ha_result
+                await broadcast_notification(reply, speak=True)
+                return JSONResponse({"status": "ok", "response": reply})
+
+    # Standard LLM-Verarbeitung
+    session_id = "respeaker"
+    if session_id not in conversations:
+        conversations[session_id] = []
+
+    conversations[session_id].append({"role": "user", "content": text})
+    history = conversations[session_id][-16:]
+
+    try:
+        response = await ai.chat.completions.create(
+            model=LLM_MODEL,
+            max_tokens=400,
+            messages=[{"role": "system", "content": build_system_prompt()}, *history],
+        )
+        reply = response.choices[0].message.content or ""
+    except Exception as e:
+        print(f"  LLM ERROR: {e}", flush=True)
+        reply = f"Da scheint etwas schiefgelaufen zu sein, {USER_ADDRESS}."
+
+    spoken_text, action = extract_action(reply)
+    conversations[session_id].append({"role": "assistant", "content": spoken_text or reply})
+
+    # Aktionen ausfuehren
+    if action:
+        action_result = ""
+        if action["type"] == "SEARCH":
+            action_result = await web_search(action["payload"])
+        elif action["type"] == "NEWS":
+            action_result = await web_search("aktuelle nachrichten heute deutschland")
+        elif action["type"] == "HA_OVERVIEW" and ha:
+            action_result = await ha.get_house_overview()
+        elif action["type"] == "HA_TEMPS" and ha:
+            action_result = await ha.get_all_temperatures()
+        elif action["type"] == "HA_ROOM" and ha:
+            action_result = await ha.get_room_status(action["payload"])
+
+        if action_result and "fehlgeschlagen" not in action_result:
+            try:
+                summary_resp = await ai.chat.completions.create(
+                    model=LLM_MODEL,
+                    max_tokens=250,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": (
+                                f"Du bist Jarvis. Fasse die folgenden Informationen KURZ "
+                                f"auf Deutsch zusammen, maximal 3 Saetze, im Jarvis-Stil. "
+                                f"Sprich den Nutzer als {USER_ADDRESS} an. "
+                                f"KEINE Tags in eckigen Klammern. KEINE ACTION-Tags."
+                            ),
+                        },
+                        {"role": "user", "content": f"Fasse zusammen:\n\n{action_result}"},
+                    ],
+                )
+                spoken_text = summary_resp.choices[0].message.content or action_result
+            except Exception:
+                spoken_text = action_result
+
+    if spoken_text:
+        await broadcast_notification(spoken_text, speak=True)
+
+    print(f"[voice] Antwort: {(spoken_text or reply)[:100]}", flush=True)
+    return JSONResponse({"status": "ok", "response": spoken_text or reply})
 
 
 # ---------------------------------------------------------------------------

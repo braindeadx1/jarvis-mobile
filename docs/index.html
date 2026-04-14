@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jarvis Voice Assistant — Projektdokumentation</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:#1a1a2e;
+    color:#d4d4dc;
+    line-height:1.7;
+    min-height:100vh;
+  }
+  a{color:#53a8e2;text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* Header */
+  header{
+    background:linear-gradient(135deg,#16213e 0%,#0f3460 100%);
+    padding:3rem 1.5rem 2.5rem;
+    text-align:center;
+    border-bottom:3px solid #e94560;
+  }
+  header h1{
+    font-size:2.4rem;
+    color:#fff;
+    letter-spacing:.5px;
+  }
+  header h1 span{color:#e94560}
+  header p.subtitle{
+    margin-top:.6rem;
+    font-size:1.05rem;
+    color:#8892b0;
+  }
+
+  /* Navigation */
+  nav{
+    background:#16213e;
+    position:sticky;top:0;z-index:100;
+    padding:.6rem 1rem;
+    display:flex;flex-wrap:wrap;justify-content:center;gap:.4rem .8rem;
+    border-bottom:1px solid #0f3460;
+    box-shadow:0 2px 12px rgba(0,0,0,.4);
+  }
+  nav a{
+    color:#8892b0;font-size:.88rem;padding:.3rem .7rem;border-radius:4px;
+    transition:all .2s;
+  }
+  nav a:hover,nav a:focus{color:#fff;background:rgba(233,69,96,.15);text-decoration:none}
+
+  /* Main */
+  main{max-width:960px;margin:0 auto;padding:2rem 1.5rem 4rem}
+
+  /* Section */
+  section{margin-bottom:2.8rem}
+  section h2{
+    font-size:1.55rem;color:#e94560;
+    border-bottom:2px solid #0f3460;
+    padding-bottom:.4rem;margin-bottom:1.2rem;
+  }
+  section h3{
+    font-size:1.15rem;color:#53a8e2;margin:1.4rem 0 .6rem;
+  }
+
+  /* Cards */
+  .card{
+    background:#16213e;
+    border:1px solid #0f3460;
+    border-radius:8px;
+    padding:1.4rem 1.6rem;
+    margin-bottom:1.2rem;
+    box-shadow:0 2px 8px rgba(0,0,0,.3);
+  }
+  .card h3{margin-top:0}
+
+  /* Lists */
+  ul,ol{padding-left:1.4rem;margin:.5rem 0}
+  li{margin-bottom:.35rem}
+  li strong{color:#e8e8f0}
+
+  /* Code blocks */
+  pre{
+    background:#0d0d1a;
+    border:1px solid #0f3460;
+    border-radius:6px;
+    padding:1.2rem 1.4rem;
+    overflow-x:auto;
+    font-size:.82rem;
+    line-height:1.55;
+    color:#a8d8a8;
+    margin:1rem 0;
+  }
+  code{
+    font-family:'Cascadia Code','Fira Code',Consolas,monospace;
+  }
+  p code,li code{
+    background:#0d0d1a;padding:.15rem .4rem;border-radius:3px;
+    font-size:.88em;color:#a8d8a8;
+  }
+
+  /* Table */
+  .table-wrap{overflow-x:auto;margin:1rem 0}
+  table{
+    width:100%;border-collapse:collapse;
+    font-size:.9rem;
+  }
+  th{
+    background:#0f3460;color:#fff;
+    text-align:left;padding:.65rem .8rem;
+    border:1px solid #1a3a6e;
+    white-space:nowrap;
+  }
+  td{
+    padding:.55rem .8rem;
+    border:1px solid #1a2a4e;
+    background:#16213e;
+  }
+  tr:hover td{background:#1a2d50}
+
+  /* Numbered flow list */
+  ol.flow{counter-reset:flow;list-style:none;padding-left:0}
+  ol.flow li{
+    counter-increment:flow;
+    position:relative;
+    padding:.6rem .8rem .6rem 3rem;
+    margin-bottom:.5rem;
+    background:#16213e;
+    border-left:3px solid #0f3460;
+    border-radius:0 6px 6px 0;
+  }
+  ol.flow li::before{
+    content:counter(flow);
+    position:absolute;left:.6rem;top:.55rem;
+    width:1.7rem;height:1.7rem;
+    background:#e94560;color:#fff;
+    font-size:.82rem;font-weight:700;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+  }
+
+  /* Pill badges */
+  .badge{
+    display:inline-block;
+    background:#0f3460;color:#53a8e2;
+    font-size:.75rem;padding:.15rem .55rem;border-radius:12px;
+    margin-right:.3rem;vertical-align:middle;
+  }
+
+  /* Footer */
+  footer{
+    text-align:center;
+    padding:2rem 1rem;
+    font-size:.82rem;color:#555;
+    border-top:1px solid #0f3460;
+  }
+
+  /* Responsive */
+  @media(max-width:640px){
+    header h1{font-size:1.6rem}
+    main{padding:1.2rem 1rem 3rem}
+    pre{font-size:.72rem;padding:.8rem}
+  }
+</style>
+</head>
+<body>
+
+<!-- =========== HEADER =========== -->
+<header>
+  <h1><span>Jarvis</span> Voice Assistant</h1>
+  <p class="subtitle">Projektdokumentation &mdash; Persoenlicher KI-Sprachassistent</p>
+</header>
+
+<!-- =========== NAV =========== -->
+<nav>
+  <a href="#uebersicht">Uebersicht</a>
+  <a href="#architektur">Architektur</a>
+  <a href="#komponenten">Komponenten</a>
+  <a href="#flow">Sprachbefehl-Flow</a>
+  <a href="#infrastruktur">Infrastruktur</a>
+  <a href="#einschraenkungen">Einschraenkungen</a>
+  <a href="#naechste-schritte">Naechste Schritte</a>
+</nav>
+
+<!-- =========== MAIN =========== -->
+<main>
+
+<!-- 1. Uebersicht -->
+<section id="uebersicht">
+  <h2>1. Uebersicht</h2>
+  <div class="card">
+    <p>Jarvis ist ein persoenlicher KI-Sprachassistent bestehend aus:</p>
+    <ul>
+      <li><strong>Android PWA</strong> fuer Handy-Steuerung</li>
+      <li><strong>ReSpeaker Lite Voice Satellite</strong> mit &bdquo;Hey Jarvis&ldquo; Wake Word</li>
+      <li><strong>FastAPI Backend</strong> auf Proxmox CT</li>
+      <li><strong>Home Assistant Integration</strong> fuer Smarthome</li>
+      <li><strong>ClawBot</strong> fuer WhatsApp/Discord Nachrichtenweiterleitung</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. Architektur -->
+<section id="architektur">
+  <h2>2. Architektur</h2>
+  <div class="card">
+    <pre><code>ReSpeaker (ESP32-S3 + XMOS XU316)
+    |  WiFi / ESPHome API
+    v
+Home Assistant (VM 110, 192.167.178.110)
+    |--- openWakeWord: "Hey Jarvis" detection
+    |--- Whisper STT: Speech-to-Text
+    |--- Jarvis Conversation Agent (custom integration)
+    |       |  REST POST /v1/chat/completions
+    |       v
+    |   Jarvis Server (CT 7300, 192.167.200.30:8443)
+    |       |--- OpenRouter LLM (GPT-4o-mini)
+    |       |--- Home Assistant REST API
+    |       |--- Edge TTS (de-DE-ConradNeural)
+    |       '--- Web-Suche (DuckDuckGo)
+    |              |  WebSocket broadcast
+    |              v
+    |          Android PWA (Handy)
+    |
+    |--- Piper TTS: lokale Sprachausgabe (fuer Speaker)
+    '--- Friday Bridge: WhatsApp-Nachrichtenweiterleitung
+            |  monitors ClawBot session logs
+            v
+        ClawBot (CT 7200) --&gt; WhatsApp / Discord</code></pre>
+  </div>
+</section>
+
+<!-- 3. Komponenten im Detail -->
+<section id="komponenten">
+  <h2>3. Komponenten im Detail</h2>
+
+  <!-- ReSpeaker -->
+  <div class="card">
+    <h3><span class="badge">HW</span> ReSpeaker Lite (Voice Satellite)</h3>
+    <ul>
+      <li><strong>Hardware:</strong> Seeed ReSpeaker Lite, ESP32-S3 + XMOS XU316 DSP</li>
+      <li><strong>Firmware:</strong> ESPHome 2026.3.3 (standard <code>i2s_audio</code>, kein Custom Component)</li>
+      <li><strong>I2S Config:</strong> bits_per_sample 32bit, i2s_mode secondary (XMOS ist Master)</li>
+      <li><strong>Pins:</strong> LRCLK=GPIO7, BCLK=GPIO8, MCLK=GPIO9, DIN=GPIO44, DOUT=GPIO43, LED=GPIO1</li>
+      <li><strong>Anschluss:</strong> USB am NUC (192.167.178.11) fuer Strom + Serial Flash</li>
+      <li><strong>WiFi:</strong> ESPHome API zu Home Assistant</li>
+      <li><strong>LED:</strong> WS2812 &mdash; <span style="color:#00e5ff">Cyan</span>=Listening, <span style="color:#448aff">Blau</span>=Processing, <span style="color:#e94560">Rot</span>=Error</li>
+      <li><strong>Wake Word:</strong> server-side via openWakeWord (<code>hey_jarvis</code> Modell)</li>
+      <li><strong>Speaker:</strong> noch nicht aktiv (I2S Bus-Lock Problem, Full-Duplex WIP)</li>
+    </ul>
+  </div>
+
+  <!-- HA Voice Pipeline -->
+  <div class="card">
+    <h3><span class="badge">HA</span> HA Voice Pipeline &bdquo;Jarvis&ldquo;</h3>
+    <ul>
+      <li><strong>Wake Word:</strong> openWakeWord Add-on, Modell <code>hey_jarvis</code>, Threshold 0.5</li>
+      <li><strong>STT:</strong> Whisper (faster-whisper), deutsch</li>
+      <li><strong>Conversation Engine:</strong> Custom Integration <code>jarvis_conversation</code>
+        <ul>
+          <li>Leitet STT-Text per REST an Jarvis Server</li>
+          <li>Endpoint: <code>POST https://192.167.200.30:8443/v1/chat/completions</code></li>
+          <li>OpenAI-kompatibles Format</li>
+        </ul>
+      </li>
+      <li><strong>TTS:</strong> Piper (<code>de_DE-eva_k-x_low</code>)</li>
+    </ul>
+  </div>
+
+  <!-- Jarvis Server -->
+  <div class="card">
+    <h3><span class="badge">SRV</span> Jarvis Server (CT 7300)</h3>
+    <ul>
+      <li><strong>Stack:</strong> FastAPI + Uvicorn, Python venv</li>
+      <li><strong>Port:</strong> 8443 (HTTPS, selbstsigniert)</li>
+      <li><strong>LLM:</strong> OpenRouter (GPT-4o-mini, konfigurierbar)</li>
+      <li><strong>TTS:</strong> Edge TTS (<code>de-DE-ConradNeural</code>)</li>
+      <li><strong>HA Integration:</strong> REST API fuer Smarthome-Steuerung</li>
+      <li><strong>Geraete:</strong> ~90 Geraete in <code>devices.csv</code> (hot-reload)</li>
+      <li><strong>WebSocket:</strong> fuer PWA-Clients (Audio + Text broadcast)</li>
+      <li><strong>Endpoints:</strong>
+        <code>/ws</code> (WebSocket),
+        <code>/webhook/clawbot</code>,
+        <code>/api/voice</code>,
+        <code>/v1/chat/completions</code>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Friday Bridge -->
+  <div class="card">
+    <h3><span class="badge">BOT</span> Friday Bridge (CT 7200)</h3>
+    <ul>
+      <li><strong>Typ:</strong> Python Script, ueberwacht ClawBot Session-JSONL-Logs</li>
+      <li><strong>Erkennung:</strong> Bot-Antworten (<code>role: assistant</code>)</li>
+      <li><strong>Filterung:</strong> Strippt final-Tags, filtert <code>NO_REPLY</code> / <code>HEARTBEAT_OK</code></li>
+      <li><strong>Smarthome-Meldungen &ndash; Cooldown-System:</strong>
+        <ul>
+          <li>Wasser = 0 (immer sofort)</li>
+          <li>Klingel = 30 s</li>
+          <li>Person = 5 min</li>
+          <li>Fenster = 5 min</li>
+          <li>Temperatur = 30 min</li>
+        </ul>
+      </li>
+      <li><strong>Weiterleitung:</strong> per Webhook an Jarvis Server</li>
+      <li><strong>Fix 2026-04-14:</strong> Session-Rotation nach 30 s Idle (war vorher blockiert)</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 4. Sprachbefehl-Flow -->
+<section id="flow">
+  <h2>4. Sprachbefehl-Flow</h2>
+  <div class="card">
+    <ol class="flow">
+      <li>Mikrofon nimmt Audio auf (I2S, XMOS DSP)</li>
+      <li>Audio-Stream per WiFi an HA (ESPHome API, continuous)</li>
+      <li>openWakeWord prueft auf &bdquo;Hey Jarvis&ldquo;</li>
+      <li>Wake Word erkannt &rarr; Pipeline startet, LED <span style="color:#00e5ff">cyan</span></li>
+      <li>Whisper STT transkribiert Sprachbefehl</li>
+      <li>LED <span style="color:#448aff">blau</span>, Text an Jarvis Conversation Agent</li>
+      <li>Custom Integration sendet REST POST an Jarvis Server</li>
+      <li>Jarvis verarbeitet: <code>parse_ha_command()</code> &rarr; HA-Steuerung <strong>ODER</strong> LLM &rarr; OpenRouter</li>
+      <li>Antwort zurueck an HA Pipeline + Broadcast an PWA</li>
+      <li>Piper TTS fuer lokale Ausgabe (Speaker WIP)</li>
+      <li>PWA empfaengt Antwort per WebSocket + Edge TTS Audio</li>
+      <li>Pipeline fertig, zurueck zu Wake Word Listening</li>
+    </ol>
+  </div>
+</section>
+
+<!-- 5. Infrastruktur -->
+<section id="infrastruktur">
+  <h2>5. Infrastruktur</h2>
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Komponente</th>
+            <th>Container / VM</th>
+            <th>IP</th>
+            <th>Port</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Jarvis Server</td>
+            <td>CT 7300 (PVE1)</td>
+            <td><code>192.167.200.30</code></td>
+            <td>8443</td>
+          </tr>
+          <tr>
+            <td>Home Assistant</td>
+            <td>VM 110 (PVE1)</td>
+            <td><code>192.167.178.110</code></td>
+            <td>8123</td>
+          </tr>
+          <tr>
+            <td>ClawBot + Bridge</td>
+            <td>CT 7200 (PVE1)</td>
+            <td><code>192.167.200.12</code></td>
+            <td>18789</td>
+          </tr>
+          <tr>
+            <td>NUC (ReSpeaker USB)</td>
+            <td>Bare Metal</td>
+            <td><code>192.167.178.11</code></td>
+            <td>&mdash;</td>
+          </tr>
+          <tr>
+            <td>Ollama (Fallback)</td>
+            <td>CT 7100 (PVE2)</td>
+            <td><code>192.167.200.5</code></td>
+            <td>11434</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 6. Bekannte Einschraenkungen -->
+<section id="einschraenkungen">
+  <h2>6. Bekannte Einschraenkungen</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Speaker auf ReSpeaker nicht aktiv:</strong> ESPHome I2S Bus Mutex Lock verhindert gleichzeitige Mic+Speaker Nutzung. ESP-IDF v5.x unterstuetzt Full-Duplex ueber separate RX/TX Channels, aber ESPHome&rsquo;s Lock ist der Blocker.</li>
+      <li><strong>Custom Component QingWind6:</strong> inkompatibel mit ESPHome 2026.3.3 (API-Aenderungen)</li>
+      <li><strong>openWakeWord Wake Word Entity:</strong> zeigt in HA &bdquo;unavailable&ldquo; &mdash; kosmetisch, Erkennung funktioniert server-side</li>
+      <li><strong>Wake Word Threshold:</strong> ggf. anpassen je nach Umgebungslaerm</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 7. Naechste Schritte -->
+<section id="naechste-schritte">
+  <h2>7. Naechste Schritte</h2>
+  <div class="card">
+    <ul>
+      <li>Speaker-Fix: Custom I2S Full-Duplex Component fuer ESPHome</li>
+      <li>Klatschen-Erkennung als zweiter Trigger</li>
+      <li>Zweiter ReSpeaker in anderem Raum</li>
+      <li>openWakeWord Threshold Tuning</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+
+<!-- =========== FOOTER =========== -->
+<footer>
+  Generated for Jarvis Mobile Project &mdash; 2026-04-14
+</footer>
+
+</body>
+</html>
