@@ -197,15 +197,28 @@ def extract_reply(line):
 
 
 def tail_session(filepath):
-    """Tailed eine JSONL-Datei und gibt neue Zeilen zurueck."""
+    """Tailed eine JSONL-Datei und gibt neue Zeilen zurueck.
+    Wirft StopIteration nach SESSION_CHECK_INTERVAL Sekunden Idle,
+    damit der Aufrufer die Session-Rotation pruefen kann."""
+    idle_since = time.time()
     with open(filepath, "r") as f:
         f.seek(0, 2)
         while True:
             line = f.readline()
             if line:
+                idle_since = time.time()
                 yield line.strip()
             else:
+                # Alle 30s ohne neue Daten: zurueck zum Aufrufer fuer Session-Check
+                if time.time() - idle_since > 30:
+                    return
                 time.sleep(0.5)
+
+
+def _strip_final_tags(text: str) -> str:
+    """Entfernt <final>...</final> Wrapper aus ClawBot-Antworten."""
+    m = re.match(r"^\s*<final>(.*)</final>\s*$", text, re.DOTALL)
+    return m.group(1).strip() if m else text
 
 
 def run():
@@ -230,6 +243,13 @@ def run():
             for line in tail_session(session):
                 reply = extract_reply(line)
                 if reply:
+                    # <final>-Tags strippen
+                    reply = _strip_final_tags(reply)
+
+                    # Gefilterte Antworten ignorieren
+                    if reply in ("NO_REPLY", "HEARTBEAT_OK", ""):
+                        continue
+
                     # Smarthome-Meldung? → Cooldown pruefen
                     if _is_smarthome_message(reply):
                         if not _check_cooldown(reply):
@@ -239,11 +259,6 @@ def run():
                         print(f"[bridge] Bot-Antwort: {reply[:80]}", flush=True)
 
                     forward_to_jarvis("ClawBot", "whatsapp", reply)
-
-                new_session = get_active_session()
-                if new_session and new_session != session:
-                    print(f"[bridge] Neue Session: {os.path.basename(new_session)}", flush=True)
-                    break
 
         except Exception as e:
             print(f"[bridge] Fehler: {e}", flush=True)

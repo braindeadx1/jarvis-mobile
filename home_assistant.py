@@ -471,25 +471,23 @@ def parse_ha_command(text: str, registry: DeviceRegistry) -> dict | None:
                     return {"action": "set_temperature", "entity_id": climate_devs[0].entity_id, "temperature": target, "room": room}
 
     if action:
-        # Geraet finden
+        # Exakter Name-Match hat Vorrang
         for dev in registry.devices:
-            if dev.type in ("light", "light_group", "switch", "cover"):
-                name_lower = dev.friendly_name.lower()
-                room_lower = dev.room.lower()
-                # Pruefe ob Raum oder Name im Text vorkommt
-                if room_lower in t and (dev.type in t or "licht" in t or "rolladen" in t or "rollladen" in t or name_lower in t):
-                    return {"action": action, "entity_id": dev.entity_id}
-                if name_lower in t:
-                    return {"action": action, "entity_id": dev.entity_id}
+            if dev.friendly_name.lower() in t:
+                return {"action": action, "entity_id": dev.entity_id}
 
-        # Fallback: Raum + Typ-Matching
+        # Raum + Typ-Matching
         for room in registry.get_rooms():
             if room.lower() in t:
                 room_devs = registry.get_room_devices(room)
                 if "licht" in t or "light" in t:
-                    light_devs = [d for d in room_devs if d.type in ("light", "light_group")]
-                    if light_devs:
-                        return {"action": action, "entity_id": light_devs[0].entity_id}
+                    # light_group hat Vorrang vor light (Hauptlicht vor WLED)
+                    light_groups = [d for d in room_devs if d.type == "light_group"]
+                    if light_groups:
+                        return {"action": action, "entity_id": light_groups[0].entity_id}
+                    lights = [d for d in room_devs if d.type == "light"]
+                    if lights:
+                        return {"action": action, "entity_id": lights[0].entity_id}
                 if "rolladen" in t or "rollladen" in t:
                     cover_devs = [d for d in room_devs if d.type == "cover"]
                     if cover_devs:
