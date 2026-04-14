@@ -334,6 +334,124 @@ function onShakeDetected() {
   startListening();
 }
 
+// ===== Clap Detection (Web Audio API) =====
+let clapEnabled = false;
+let clapAudioCtx = null;
+let clapAnalyser = null;
+let clapStream = null;
+let lastClapTime = 0;
+let lastClapTrigger = 0;
+const CLAP_THRESHOLD = 0.25;      // RMS threshold — nur laute Impulse
+const CLAP_SILENCE = 0.05;        // Muss zwischen Klatschern leise werden
+const CLAP_MIN_GAP = 150;         // ms zwischen Klatschern
+const CLAP_MAX_GAP = 800;         // ms max Abstand (enger = weniger Fehlausloesung)
+const CLAP_COOLDOWN = 10000;      // ms nach Trigger
+
+async function enableClap() {
+  try {
+    clapStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    clapAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const source = clapAudioCtx.createMediaStreamSource(clapStream);
+    const processor = clapAudioCtx.createScriptProcessor(2048, 1, 1);
+
+    processor.onaudioprocess = (e) => {
+      const data = e.inputBuffer.getChannelData(0);
+      let sum = 0;
+      for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
+      const rms = Math.sqrt(sum / data.length);
+
+      // Debug: Pegel im Status anzeigen
+      const now = Date.now();
+      if (!enableClap._lastDebug) enableClap._lastDebug = 0;
+      if (!enableClap._maxRms) enableClap._maxRms = 0;
+      enableClap._maxRms = Math.max(enableClap._maxRms, rms);
+      if (now - enableClap._lastDebug > 300) {
+        const bar = "█".repeat(Math.min(20, Math.round(enableClap._maxRms * 100)));
+        const thr = rms > CLAP_THRESHOLD ? " !" : "";
+        statusText.textContent = `🎤 ${enableClap._maxRms.toFixed(3)} ${bar}${thr}`;
+        enableClap._maxRms = 0;
+        enableClap._lastDebug = now;
+      }
+
+      if (now - lastClapTrigger < CLAP_COOLDOWN) return;
+
+      // Zwischen zwei Klatschern muss es leise geworden sein
+      if (!enableClap._wasQuiet) enableClap._wasQuiet = true;
+      if (rms < CLAP_SILENCE) enableClap._wasQuiet = true;
+
+      if (rms > CLAP_THRESHOLD && enableClap._wasQuiet) {
+        enableClap._wasQuiet = false;  // Warten bis wieder leise
+        const gap = now - lastClapTime;
+        if (gap >= CLAP_MIN_GAP) {
+          if (gap <= CLAP_MAX_GAP && lastClapTime > 0) {
+            // Doppelklatschen!
+            lastClapTime = 0;
+            lastClapTrigger = now;
+            onClapDetected();
+          } else {
+            lastClapTime = now;
+            statusText.textContent = "👏 Erstes Klatschen...";
+          }
+        }
+      }
+    };
+
+    source.connect(processor);
+    processor.connect(clapAudioCtx.destination);
+    clapEnabled = true;
+
+    const btnClap = document.getElementById("btn-clap");
+    if (btnClap) btnClap.classList.add("active");
+    console.log("[clap] Klatschen-Erkennung aktiv");
+  } catch (err) {
+    console.error("[clap] Mikrofon-Fehler:", err);
+    alert("Mikrofon-Zugriff verweigert. Bitte Berechtigung erteilen.");
+  }
+}
+
+function disableClap() {
+  if (clapStream) {
+    clapStream.getTracks().forEach((t) => t.stop());
+    clapStream = null;
+  }
+  if (clapAudioCtx) {
+    clapAudioCtx.close();
+    clapAudioCtx = null;
+  }
+  clapEnabled = false;
+  const btnClap = document.getElementById("btn-clap");
+  if (btnClap) btnClap.classList.remove("active");
+}
+
+function openProtocol(url) {
+  const a = document.createElement("a");
+  a.href = url;
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => a.remove(), 100);
+}
+
+function onClapDetected() {
+  console.log("[clap] Doppelklatschen erkannt!");
+  statusText.textContent = "🚀 Good Morning Protocol...";
+
+  // Phase 1: Apps oeffnen (mit Verzoegerung damit Browser nicht blockiert)
+  setTimeout(() => openProtocol("spotify:"), 200);
+  setTimeout(() => openProtocol("ms-outlook:"), 600);
+
+  // Phase 2: Jarvis begruessen
+  setTimeout(() => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        type: "text",
+        text: "Jarvis, guten Morgen! Starte den Tag."
+      }));
+      setStatus("thinking", "Jarvis wird geweckt...");
+    }
+  }, 1000);
+}
+
 // ===== Model Selector =====
 function buildModelSelector(models, currentModel) {
   const container = document.getElementById("model-container");
@@ -415,6 +533,18 @@ btnShake.addEventListener("click", () => {
     enableShake();
   }
 });
+
+// Clap Toggle
+const btnClap = document.getElementById("btn-clap");
+if (btnClap) {
+  btnClap.addEventListener("click", () => {
+    if (clapEnabled) {
+      disableClap();
+    } else {
+      enableClap();
+    }
+  });
+}
 
 // ===== PWA Service Worker =====
 if ("serviceWorker" in navigator) {

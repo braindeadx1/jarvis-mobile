@@ -825,26 +825,27 @@ async def clawbot_webhook(request: Request):
     try:
         notif_resp = await ai.chat.completions.create(
             model=LLM_MODEL,
-            max_tokens=100,
+            max_tokens=150,
             messages=[
                 {
                     "role": "system",
                     "content": (
-                        f"Du bist Jarvis. Deine Kollegin Friday (ein anderer KI-Assistent) "
-                        f"hat eine {channel}-Nachricht fuer {USER_ADDRESS} weitergeleitet. "
-                        f"Kuendige sie kurz an (1 Satz). Nenne die Quelle 'Friday'. "
-                        f"KEINE Tags in eckigen Klammern."
+                        f"Du bist Jarvis. Deine Kollegin Friday hat eine Nachricht fuer {USER_ADDRESS} weitergeleitet. "
+                        f"Fasse die Nachricht in 1-2 kurzen Saetzen zusammen. "
+                        f"Beginne mit 'Friday meldet:' gefolgt von der Zusammenfassung. "
+                        f"Nenne den Absender-Namen falls relevant. "
+                        f"KEINE Tags in eckigen Klammern. Halte es kurz und praegnant."
                     ),
                 },
                 {
                     "role": "user",
-                    "content": f"Friday meldet von {sender}: {message}",
+                    "content": f"Absender: {sender} (per {channel})\nNachricht: {message}",
                 },
             ],
         )
-        notification = notif_resp.choices[0].message.content or f"Nachricht von {sender}: {message}"
+        notification = notif_resp.choices[0].message.content or f"Friday meldet: {message[:100]}"
     except Exception:
-        notification = f"{USER_ADDRESS}, {sender} schreibt per {channel}: {message}"
+        notification = f"Friday meldet: {sender} schreibt — {message[:100]}"
 
     await broadcast_notification(notification, speak=True)
     return JSONResponse({"status": "delivered", "clients": len(active_clients)})
