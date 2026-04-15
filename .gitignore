@@ -5,3 +5,11 @@ __pycache__/
 *.pyc
 venv/
 .env
+
+# Build artifacts
+build/
+dist/
+*.spec
+*.bak
+ha_entities_complete.csv
+devices_excel.csv
