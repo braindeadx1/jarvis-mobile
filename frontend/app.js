@@ -147,7 +147,73 @@ function showNotification(text) {
   setTimeout(() => responseText.classList.remove("notification"), 10000);
 }
 
-// ===== Audio Playback =====
+// ===== Audio Playback + Visualization =====
+let vizCtx = null;
+let vizAnalyser = null;
+let vizAnimId = null;
+
+function getVizContext() {
+  if (!vizCtx) {
+    vizCtx = new (window.AudioContext || window.webkitAudioContext)();
+    vizAnalyser = vizCtx.createAnalyser();
+    vizAnalyser.fftSize = 256;
+    vizAnalyser.smoothingTimeConstant = 0.65;
+    vizAnalyser.connect(vizCtx.destination);
+  }
+  if (vizCtx.state === "suspended") vizCtx.resume();
+  return vizAnalyser;
+}
+
+function startViz() {
+  const core = document.querySelector(".reactor-core");
+  const coreInner = document.querySelector(".core-inner");
+  const energyPulse = document.querySelector(".energy-pulse");
+  reactor.classList.add("audio-reactive");
+
+  const analyser = getVizContext();
+  const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+  function tick() {
+    analyser.getByteFrequencyData(dataArray);
+    let sum = 0;
+    for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+    const level = sum / dataArray.length / 255; // 0.0 – 1.0
+
+    if (core) {
+      const scale = 1 + level * 0.45;
+      const glow = 25 + level * 55;
+      const alpha = 0.45 + level * 0.55;
+      core.style.transform = `translate(-50%,-50%) scale(${scale})`;
+      core.style.boxShadow =
+        `0 0 ${glow}px hsla(210,100%,55%,${alpha}),` +
+        `0 0 ${glow * 2.5}px hsla(210,100%,50%,${alpha * 0.35})`;
+    }
+    if (coreInner) {
+      coreInner.style.transform = `translate(-50%,-50%) scale(${0.9 + level * 0.35})`;
+    }
+    if (energyPulse) {
+      energyPulse.style.animationDuration = `${1.8 - level * 1.2}s`;
+    }
+
+    vizAnimId = requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+function stopViz() {
+  if (vizAnimId) {
+    cancelAnimationFrame(vizAnimId);
+    vizAnimId = null;
+  }
+  reactor.classList.remove("audio-reactive");
+  const core = document.querySelector(".reactor-core");
+  const coreInner = document.querySelector(".core-inner");
+  const energyPulse = document.querySelector(".energy-pulse");
+  if (core) { core.style.transform = ""; core.style.boxShadow = ""; }
+  if (coreInner) { coreInner.style.transform = ""; }
+  if (energyPulse) { energyPulse.style.animationDuration = ""; }
+}
+
 function queueAudio(base64Audio) {
   audioQueue.push(base64Audio);
   if (!isPlayingAudio) {
@@ -158,12 +224,13 @@ function queueAudio(base64Audio) {
 function playNextAudio() {
   if (audioQueue.length === 0) {
     isPlayingAudio = false;
+    stopViz();
     setStatus("idle", "SYSTEMS ONLINE");
     return;
   }
 
   isPlayingAudio = true;
-  setStatus("speaking", "Spricht...");
+  setStatus("speaking", "TRANSMITTING");
 
   const audioData = audioQueue.shift();
   const audioBytes = atob(audioData);
@@ -177,6 +244,16 @@ function playNextAudio() {
   const url = URL.createObjectURL(blob);
   const audio = new Audio(url);
 
+  // Connect to Web Audio analyser for visualization
+  try {
+    const analyser = getVizContext();
+    const source = vizCtx.createMediaElementSource(audio);
+    source.connect(analyser);
+    startViz();
+  } catch (e) {
+    console.warn("Audio visualization unavailable:", e);
+  }
+
   audio.onended = () => {
     URL.revokeObjectURL(url);
     playNextAudio();
@@ -184,10 +261,11 @@ function playNextAudio() {
 
   audio.onerror = () => {
     URL.revokeObjectURL(url);
+    stopViz();
     playNextAudio();
   };
 
-  audio.play().catch(() => playNextAudio());
+  audio.play().catch(() => { stopViz(); playNextAudio(); });
 }
 
 // ===== Speech Recognition (Web Speech API) =====
