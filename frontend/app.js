@@ -35,13 +35,13 @@ function connectWS() {
   ws.onopen = () => {
     connectionDot.classList.add("connected");
     connectionText.textContent = "Verbunden";
-    setStatus("idle", "Bereit");
+    setStatus("idle", "SYSTEMS ONLINE");
   };
 
   ws.onclose = () => {
     connectionDot.classList.remove("connected");
     connectionText.textContent = "Getrennt";
-    setStatus("idle", "Keine Verbindung");
+    setStatus("idle", "CONNECTION LOST");
     setTimeout(connectWS, 3000);
   };
 
@@ -72,10 +72,10 @@ function handleMessage(data) {
 
   if (data.type === "status") {
     const labels = {
-      thinking: "Denkt nach...",
-      speaking: "Spricht...",
-      searching: "Sucht...",
-      idle: "Bereit",
+      thinking: "ANALYZING",
+      speaking: "TRANSMITTING",
+      searching: "SCANNING",
+      idle: "SYSTEMS ONLINE",
     };
     setStatus(data.status, labels[data.status] || data.status);
   }
@@ -101,9 +101,37 @@ function handleMessage(data) {
 }
 
 // ===== UI Updates =====
+let idleLifeInterval = null;
+
 function setStatus(state, label) {
   reactor.className = state;
   statusText.textContent = label;
+
+  // Manage idle life animations
+  if (state === "idle") {
+    startIdleLife();
+  } else {
+    stopIdleLife();
+  }
+}
+
+function startIdleLife() {
+  stopIdleLife();
+  // Periodic subtle effects while idle
+  idleLifeInterval = setInterval(() => {
+    if (reactor.className !== "idle") return;
+    // Random flicker effect
+    reactor.classList.add("idle-flicker");
+    setTimeout(() => reactor.classList.remove("idle-flicker"), 500);
+  }, 6000 + Math.random() * 8000);
+}
+
+function stopIdleLife() {
+  if (idleLifeInterval) {
+    clearInterval(idleLifeInterval);
+    idleLifeInterval = null;
+  }
+  reactor.classList.remove("idle-flicker");
 }
 
 function showResponse(text) {
@@ -130,7 +158,7 @@ function queueAudio(base64Audio) {
 function playNextAudio() {
   if (audioQueue.length === 0) {
     isPlayingAudio = false;
-    setStatus("idle", "Bereit");
+    setStatus("idle", "SYSTEMS ONLINE");
     return;
   }
 
@@ -186,7 +214,7 @@ function initSpeechRecognition() {
     isListening = false;
     btnTalk.classList.remove("recording");
     if (reactor.className === "listening") {
-      setStatus("idle", "Bereit");
+      setStatus("idle", "SYSTEMS ONLINE");
     }
   };
 
@@ -194,7 +222,7 @@ function initSpeechRecognition() {
     console.warn("Speech error:", event.error);
     isListening = false;
     btnTalk.classList.remove("recording");
-    setStatus("idle", "Bereit");
+    setStatus("idle", "SYSTEMS ONLINE");
   };
 }
 
@@ -210,7 +238,7 @@ function startListening() {
 
   isListening = true;
   btnTalk.classList.add("recording");
-  setStatus("listening", "Hoert zu...");
+  setStatus("listening", "LISTENING");
   responseText.classList.remove("visible");
 
   try {
@@ -231,7 +259,7 @@ function stopListening() {
 function sendText(text) {
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({ type: "text", text }));
-    setStatus("thinking", "Denkt nach...");
+    setStatus("thinking", "ANALYZING");
   }
 }
 
@@ -276,7 +304,7 @@ function captureAndSend() {
 
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({ type: "image", image: base64, text: "" }));
-    setStatus("thinking", "Analysiert Bild...");
+    setStatus("thinking", "VISUAL ANALYSIS");
     showResponse("Bild wird analysiert...");
   }
 }
@@ -447,7 +475,7 @@ function onClapDetected() {
         type: "text",
         text: "Jarvis, guten Morgen! Starte den Tag."
       }));
-      setStatus("thinking", "Jarvis wird geweckt...");
+      setStatus("thinking", "INITIALIZING");
     }
   }, 1000);
 }
@@ -516,7 +544,7 @@ btnStop.addEventListener("click", () => {
     btnTalk.classList.remove("recording");
   }
 
-  setStatus("idle", "Bereit");
+  setStatus("idle", "SYSTEMS ONLINE");
   responseText.classList.remove("visible");
 });
 

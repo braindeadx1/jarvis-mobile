@@ -1,8 +1,31 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect width="512" height="512" rx="100" fill="#0a0a0f"/>
-  <circle cx="256" cy="256" r="160" fill="none" stroke="#3090ff" stroke-width="6" stroke-dasharray="16 12" opacity="0.5"/>
-  <circle cx="256" cy="256" r="112" fill="none" stroke="#50a0ff" stroke-width="5" opacity="0.6"/>
-  <circle cx="256" cy="256" r="64" fill="none" stroke="#70b8ff" stroke-width="4" opacity="0.7"/>
-  <circle cx="256" cy="256" r="32" fill="#80c8ff"/>
-  <circle cx="256" cy="256" r="20" fill="#c0e4ff"/>
+  <!-- Tick marks -->
+  <circle cx="256" cy="256" r="195" fill="none" stroke="#1a6fa8" stroke-width="5" stroke-dasharray="2 18.4" opacity="0.3"/>
+  <!-- Ring 1 — 3 segments -->
+  <circle cx="256" cy="256" r="180" fill="none" stroke="#0098d4" stroke-width="4" stroke-dasharray="293 85" stroke-linecap="round" opacity="0.5"/>
+  <!-- Ring 2 — 4 segments -->
+  <circle cx="256" cy="256" r="150" fill="none" stroke="#00b4e6" stroke-width="3.5" stroke-dasharray="175 61" stroke-linecap="round" opacity="0.55"/>
+  <!-- Ring 3 — 5 segments -->
+  <circle cx="256" cy="256" r="120" fill="none" stroke="#00c8f0" stroke-width="2.5" stroke-dasharray="112 39" stroke-linecap="round" opacity="0.6"/>
+  <!-- Ring 4 — 8 segments -->
+  <circle cx="256" cy="256" r="90" fill="none" stroke="#40d8ff" stroke-width="2" stroke-dasharray="51 20" stroke-linecap="round" opacity="0.65"/>
+  <!-- Core glow layers -->
+  <circle cx="256" cy="256" r="45" fill="#006090" opacity="0.3"/>
+  <circle cx="256" cy="256" r="32" fill="#0098d4" opacity="0.6"/>
+  <circle cx="256" cy="256" r="18" fill="#80e0ff"/>
+  <circle cx="256" cy="256" r="10" fill="#c0f0ff"/>
+  <!-- Particles -->
+  <circle cx="120" cy="180" r="3" fill="#40d8ff" opacity="0.6"/>
+  <circle cx="370" cy="210" r="2.5" fill="#40d8ff" opacity="0.5"/>
+  <circle cx="310" cy="370" r="3" fill="#40d8ff" opacity="0.55"/>
+  <circle cx="160" cy="340" r="2" fill="#40d8ff" opacity="0.45"/>
+  <circle cx="390" cy="280" r="2.5" fill="#40d8ff" opacity="0.5"/>
+  <!-- HUD brackets -->
+  <g stroke="#1a6fa8" stroke-width="2.5" fill="none" opacity="0.35">
+    <path d="M72 100 L72 72 L100 72"/>
+    <path d="M440 100 L440 72 L412 72"/>
+    <path d="M72 412 L72 440 L100 440"/>
+    <path d="M440 412 L440 440 L412 440"/>
+  </g>
 </svg>

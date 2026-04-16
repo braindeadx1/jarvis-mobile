@@ -45,132 +45,436 @@ body {
     background: #44ff88;
 }
 
-/* --- Reactor (Hauptelement) --- */
+/* --- Jarvis HUD Reactor --- */
+
+/* Animatable custom properties for smooth state transitions */
+@property --hue {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 195;
+}
+
+@property --glow-alpha {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 0.4;
+}
+
+@property --glow-spread {
+    syntax: '<length>';
+    inherits: true;
+    initial-value: 20px;
+}
+
 #reactor-container {
     flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 24px;
+    gap: 20px;
+    position: relative;
+}
+
+/* Ambient background glow behind reactor */
+#reactor-container::before {
+    content: '';
+    position: absolute;
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    background: radial-gradient(circle,
+        hsla(var(--hue), 100%, 50%, 0.04) 0%,
+        transparent 70%
+    );
+    pointer-events: none;
+    transition: background 0.8s;
 }
 
 #reactor {
     position: relative;
-    width: 180px;
-    height: 180px;
-    transition: all 0.3s;
+    width: 240px;
+    height: 240px;
+    transition: --hue 0.6s ease, --glow-alpha 0.4s, --glow-spread 0.4s, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.reactor-ring {
+/* --- SVG Ring System --- */
+.reactor-rings {
     position: absolute;
-    border-radius: 50%;
-    border: 2px solid rgba(80, 160, 255, 0.3);
-}
-
-.ring-outer {
     width: 100%;
     height: 100%;
     top: 0;
     left: 0;
-    animation: spin 8s linear infinite;
-    border-style: dashed;
 }
 
-.ring-middle {
-    width: 70%;
-    height: 70%;
-    top: 15%;
-    left: 15%;
-    animation: spin 5s linear infinite reverse;
-    border-color: rgba(80, 160, 255, 0.5);
+.ring {
+    fill: none;
+    stroke: hsla(var(--hue), 100%, 60%, var(--glow-alpha));
+    stroke-linecap: round;
+    transform-origin: 150px 150px;
+    filter: drop-shadow(0 0 3px hsla(var(--hue), 100%, 50%, 0.3));
+    transition: stroke 0.5s;
 }
 
-.ring-inner {
-    width: 40%;
-    height: 40%;
-    top: 30%;
-    left: 30%;
-    animation: spin 3s linear infinite;
-    border-color: rgba(80, 160, 255, 0.7);
+.ring-ticks {
+    fill: none;
+    stroke: hsla(var(--hue), 80%, 55%, 0.2);
+    stroke-width: 5;
+    stroke-dasharray: 1 13.87;
+    transform-origin: 150px 150px;
+    animation: spin-ccw 60s linear infinite;
+    transition: stroke 0.5s;
 }
 
+/* Ring 1: outermost — 3 segments, slow CW */
+.r1 {
+    stroke-width: 2.5;
+    stroke-dasharray: 220 63;
+    animation: spin-cw 12s linear infinite;
+}
+
+/* Ring 2: 4 segments, medium CCW */
+.r2 {
+    stroke-width: 2;
+    stroke-dasharray: 140 41;
+    animation: spin-ccw 8s linear infinite;
+}
+
+/* Ring 3: 5 segments, faster CW */
+.r3 {
+    stroke-width: 1.5;
+    stroke-dasharray: 90 29.4;
+    animation: spin-cw 6s linear infinite;
+}
+
+/* Ring 4: innermost — 8 thin segments, fastest CCW */
+.r4 {
+    stroke-width: 1;
+    stroke-dasharray: 40 18.9;
+    animation: spin-ccw 4s linear infinite;
+}
+
+@keyframes spin-cw {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes spin-ccw {
+    to { transform: rotate(-360deg); }
+}
+
+/* --- Scan Sweep --- */
+.reactor-scan {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    border-radius: 50%;
+    background: conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        hsla(var(--hue), 100%, 60%, 0.06) 15deg,
+        hsla(var(--hue), 100%, 60%, 0.12) 30deg,
+        transparent 70deg
+    );
+    animation: spin-cw 3s linear infinite, scan-breathe 8s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes scan-breathe {
+    0%, 75%, 100% { opacity: 0; }
+    35%, 55% { opacity: 1; }
+}
+
+/* --- Energy Pulse --- */
+.energy-pulse {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(1);
+    border-radius: 50%;
+    border: 1.5px solid hsla(var(--hue), 100%, 65%, 0.5);
+    animation: energy-expand 4s ease-out infinite;
+    pointer-events: none;
+}
+
+@keyframes energy-expand {
+    0% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
+    100% { transform: translate(-50%, -50%) scale(4); opacity: 0; }
+}
+
+/* --- Core --- */
 .reactor-core {
     position: absolute;
-    width: 22%;
-    height: 22%;
-    top: 39%;
-    left: 39%;
+    width: 60px;
+    height: 60px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     border-radius: 50%;
-    background: radial-gradient(circle, #80c8ff 0%, #3090ff 50%, #1060c0 100%);
-    box-shadow: 0 0 20px rgba(80, 160, 255, 0.5), 0 0 60px rgba(80, 160, 255, 0.2);
+    background: radial-gradient(circle,
+        hsla(var(--hue), 100%, 88%, 1) 0%,
+        hsla(var(--hue), 100%, 60%, 0.8) 35%,
+        hsla(var(--hue), 100%, 40%, 0.25) 65%,
+        transparent 100%
+    );
+    box-shadow:
+        0 0 var(--glow-spread) hsla(var(--hue), 100%, 55%, 0.6),
+        0 0 calc(var(--glow-spread) * 2.5) hsla(var(--hue), 100%, 50%, 0.25),
+        0 0 calc(var(--glow-spread) * 5) hsla(var(--hue), 100%, 45%, 0.08);
+    animation: core-breathe 4s ease-in-out infinite;
+    transition: background 0.5s, box-shadow 0.5s;
 }
 
-/* Reactor States */
-#reactor.idle .reactor-core {
-    box-shadow: 0 0 20px rgba(80, 160, 255, 0.3), 0 0 40px rgba(80, 160, 255, 0.1);
+.core-inner {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: hsla(var(--hue), 100%, 92%, 1);
+    box-shadow: 0 0 8px hsla(var(--hue), 100%, 80%, 0.9);
+    transition: background 0.5s, box-shadow 0.5s;
 }
 
+@keyframes core-breathe {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.85;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.06);
+        opacity: 1;
+    }
+}
+
+/* --- Orbiting Particles --- */
+.particles-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+}
+
+.particle {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: hsla(var(--hue), 100%, 70%, 0.8);
+    top: 50%;
+    left: 50%;
+    box-shadow: 0 0 6px hsla(var(--hue), 100%, 60%, 0.6);
+    --orbit-radius: calc(55px + var(--i) * 10px);
+    animation: orbit calc((3 + var(--i) * 0.8) * 1s) linear infinite;
+    animation-delay: calc(var(--i) * -0.7s);
+    transition: background 0.5s, box-shadow 0.5s;
+}
+
+@keyframes orbit {
+    0% {
+        transform: rotate(0deg) translateX(var(--orbit-radius));
+        opacity: 0.2;
+    }
+    25% {
+        transform: rotate(90deg) translateX(calc(var(--orbit-radius) * 1.08));
+        opacity: 0.9;
+    }
+    50% {
+        transform: rotate(180deg) translateX(var(--orbit-radius));
+        opacity: 0.35;
+    }
+    75% {
+        transform: rotate(270deg) translateX(calc(var(--orbit-radius) * 0.92));
+        opacity: 0.8;
+    }
+    100% {
+        transform: rotate(360deg) translateX(var(--orbit-radius));
+        opacity: 0.2;
+    }
+}
+
+/* --- HUD Corner Brackets --- */
+.hud-el {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-color: hsla(var(--hue), 80%, 55%, 0.25);
+    border-style: solid;
+    border-width: 0;
+    transition: border-color 0.5s;
+}
+
+.hud-tl { top: -6px; left: -6px; border-top-width: 1.5px; border-left-width: 1.5px; }
+.hud-tr { top: -6px; right: -6px; border-top-width: 1.5px; border-right-width: 1.5px; }
+.hud-bl { bottom: -6px; left: -6px; border-bottom-width: 1.5px; border-left-width: 1.5px; }
+.hud-br { bottom: -6px; right: -6px; border-bottom-width: 1.5px; border-right-width: 1.5px; }
+
+/* ============================================================
+   REACTOR STATES
+   ============================================================ */
+
+/* Idle — cool cyan, gentle breathing */
+#reactor.idle {
+    --hue: 195;
+    --glow-alpha: 0.35;
+    --glow-spread: 18px;
+}
+
+/* Listening — green, scaled up, faster pulse */
 #reactor.listening {
-    transform: scale(1.05);
+    --hue: 150;
+    --glow-alpha: 0.7;
+    --glow-spread: 30px;
+    transform: scale(1.06);
 }
 
 #reactor.listening .reactor-core {
-    background: radial-gradient(circle, #80ffb0 0%, #30ff70 50%, #10c040 100%);
-    box-shadow: 0 0 30px rgba(80, 255, 120, 0.6), 0 0 80px rgba(80, 255, 120, 0.3);
-    animation: pulse-core 1s ease-in-out infinite;
+    animation: core-listen 1.2s ease-in-out infinite;
 }
 
-#reactor.listening .reactor-ring {
-    border-color: rgba(80, 255, 120, 0.5);
+@keyframes core-listen {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.9; }
+    50% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
 }
 
+#reactor.listening .energy-pulse {
+    animation: energy-expand 2s ease-out infinite;
+}
+
+/* Thinking — warm amber, fast ring overlay */
 #reactor.thinking {
+    --hue: 35;
+    --glow-alpha: 0.65;
+    --glow-spread: 28px;
     transform: scale(1.02);
 }
 
 #reactor.thinking .reactor-core {
-    background: radial-gradient(circle, #ffd080 0%, #ff9030 50%, #c06010 100%);
-    box-shadow: 0 0 30px rgba(255, 180, 80, 0.6), 0 0 80px rgba(255, 180, 80, 0.3);
-    animation: pulse-core 0.5s ease-in-out infinite;
+    animation: core-think 0.6s ease-in-out infinite;
 }
 
-#reactor.thinking .reactor-ring {
-    border-color: rgba(255, 180, 80, 0.5);
+@keyframes core-think {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.85; }
+    50% { transform: translate(-50%, -50%) scale(1.12); opacity: 1; }
+}
+
+/* Thinking fast-spin overlay ring */
+#reactor.thinking::after {
+    content: '';
+    position: absolute;
+    width: 80%;
+    height: 80%;
+    top: 10%;
+    left: 10%;
+    border-radius: 50%;
+    border: 1px dashed hsla(35, 100%, 60%, 0.35);
+    animation: spin-cw 1.2s linear infinite;
+    pointer-events: none;
+}
+
+#reactor.thinking .energy-pulse {
+    animation: energy-expand 1.5s ease-out infinite;
+}
+
+/* Speaking — bright blue, rhythmic pulsing */
+#reactor.speaking {
+    --hue: 210;
+    --glow-alpha: 0.8;
+    --glow-spread: 40px;
 }
 
 #reactor.speaking .reactor-core {
-    background: radial-gradient(circle, #80c8ff 0%, #3090ff 50%, #1060c0 100%);
-    box-shadow: 0 0 40px rgba(80, 160, 255, 0.8), 0 0 100px rgba(80, 160, 255, 0.4);
-    animation: pulse-core 0.8s ease-in-out infinite;
+    animation: core-speak 0.9s ease-in-out infinite;
+}
+
+@keyframes core-speak {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.9; }
+    30% { transform: translate(-50%, -50%) scale(1.22); opacity: 1; }
+    60% { transform: translate(-50%, -50%) scale(0.95); opacity: 0.8; }
+}
+
+#reactor.speaking .reactor-scan {
+    animation: spin-cw 2s linear infinite;
+    opacity: 0.7;
+}
+
+#reactor.speaking .energy-pulse {
+    animation: energy-expand 1.8s ease-out infinite;
+}
+
+/* Speaking — HUD brackets flicker */
+#reactor.speaking .hud-el {
+    animation: hud-flicker 3s ease-in-out infinite;
+}
+
+@keyframes hud-flicker {
+    0%, 94%, 100% { opacity: 1; }
+    95% { opacity: 0.3; }
+    97% { opacity: 0.8; }
+}
+
+/* Searching — purple, erratic, fast */
+#reactor.searching {
+    --hue: 270;
+    --glow-alpha: 0.7;
+    --glow-spread: 28px;
 }
 
 #reactor.searching .reactor-core {
-    background: radial-gradient(circle, #d080ff 0%, #9030ff 50%, #6010c0 100%);
-    box-shadow: 0 0 30px rgba(180, 80, 255, 0.6), 0 0 80px rgba(180, 80, 255, 0.3);
-    animation: pulse-core 0.3s ease-in-out infinite;
+    animation: core-search 0.4s ease-in-out infinite;
 }
 
-#reactor.searching .reactor-ring {
-    border-color: rgba(180, 80, 255, 0.5);
+@keyframes core-search {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+    50% { transform: translate(-50%, -50%) scale(1.18); opacity: 1; }
 }
 
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+#reactor.searching::after {
+    content: '';
+    position: absolute;
+    width: 70%;
+    height: 70%;
+    top: 15%;
+    left: 15%;
+    border-radius: 50%;
+    border: 1px dashed hsla(270, 100%, 60%, 0.3);
+    animation: spin-ccw 0.8s linear infinite;
+    pointer-events: none;
 }
 
-@keyframes pulse-core {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.7; transform: scale(1.15); }
+#reactor.searching .energy-pulse {
+    animation: energy-expand 1s ease-out infinite;
+}
+
+/* ============================================================
+   IDLE LIFE — extra animations triggered by JS class
+   ============================================================ */
+
+/* Flicker effect on reactor (added/removed by JS) */
+#reactor.idle-flicker .reactor-core {
+    animation: idle-flicker-anim 0.15s ease-in-out 3;
+}
+
+@keyframes idle-flicker-anim {
+    0%, 100% { opacity: 0.85; }
+    50% { opacity: 0.4; }
 }
 
 #status-text {
-    font-size: 14px;
-    color: #6a8aaa;
+    font-size: 12px;
+    color: hsla(195, 60%, 45%, 0.7);
     text-transform: uppercase;
-    letter-spacing: 3px;
+    letter-spacing: 4px;
+    font-family: 'Segoe UI', 'Courier New', monospace;
     text-align: center;
+    transition: color 0.5s;
 }
 
 /* --- Antwort-Bereich --- */

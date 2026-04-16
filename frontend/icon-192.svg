@@ -1,8 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
   <rect width="192" height="192" rx="40" fill="#0a0a0f"/>
-  <circle cx="96" cy="96" r="60" fill="none" stroke="#3090ff" stroke-width="3" stroke-dasharray="8 6" opacity="0.5"/>
-  <circle cx="96" cy="96" r="42" fill="none" stroke="#50a0ff" stroke-width="2.5" opacity="0.6"/>
-  <circle cx="96" cy="96" r="24" fill="none" stroke="#70b8ff" stroke-width="2" opacity="0.7"/>
-  <circle cx="96" cy="96" r="12" fill="#80c8ff"/>
-  <circle cx="96" cy="96" r="8" fill="#c0e4ff"/>
+  <!-- Tick marks -->
+  <circle cx="96" cy="96" r="72" fill="none" stroke="#1a6fa8" stroke-width="3" stroke-dasharray="1 7.6" opacity="0.3"/>
+  <!-- Ring 1 — 3 segments -->
+  <circle cx="96" cy="96" r="66" fill="none" stroke="#0098d4" stroke-width="2.5" stroke-dasharray="107 31" stroke-linecap="round" opacity="0.5"/>
+  <!-- Ring 2 — 4 segments -->
+  <circle cx="96" cy="96" r="54" fill="none" stroke="#00b4e6" stroke-width="2" stroke-dasharray="62 23" stroke-linecap="round" opacity="0.55"/>
+  <!-- Ring 3 — 5 segments -->
+  <circle cx="96" cy="96" r="42" fill="none" stroke="#00c8f0" stroke-width="1.5" stroke-dasharray="38 15" stroke-linecap="round" opacity="0.6"/>
+  <!-- Ring 4 — 8 segments -->
+  <circle cx="96" cy="96" r="30" fill="none" stroke="#40d8ff" stroke-width="1" stroke-dasharray="16 7.6" stroke-linecap="round" opacity="0.65"/>
+  <!-- Core glow -->
+  <circle cx="96" cy="96" r="14" fill="#006090" opacity="0.4"/>
+  <circle cx="96" cy="96" r="10" fill="#0098d4" opacity="0.7"/>
+  <circle cx="96" cy="96" r="6" fill="#80e0ff"/>
+  <!-- HUD brackets -->
+  <g stroke="#1a6fa8" stroke-width="1.5" fill="none" opacity="0.35">
+    <path d="M28 38 L28 28 L38 28"/>
+    <path d="M164 38 L164 28 L154 28"/>
+    <path d="M28 154 L28 164 L38 164"/>
+    <path d="M164 154 L164 164 L154 164"/>
+  </g>
 </svg>

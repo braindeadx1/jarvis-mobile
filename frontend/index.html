@@ -18,15 +18,53 @@
             <span id="connection-text">Verbinde...</span>
         </div>
 
-        <!-- Hauptbereich: Arc Reactor -->
+        <!-- Hauptbereich: Jarvis HUD Reactor -->
         <div id="reactor-container">
             <div id="reactor" class="idle">
-                <div class="reactor-ring ring-outer"></div>
-                <div class="reactor-ring ring-middle"></div>
-                <div class="reactor-ring ring-inner"></div>
-                <div class="reactor-core"></div>
+                <!-- SVG Ring System -->
+                <svg class="reactor-rings" viewBox="0 0 300 300">
+                    <!-- Outer tick marks -->
+                    <circle class="ring-ticks" cx="150" cy="150" r="142"/>
+                    <!-- Ring 1 — outermost, 3 segments -->
+                    <circle class="ring r1" cx="150" cy="150" r="135"/>
+                    <!-- Ring 2 — counter-rotate, 4 segments -->
+                    <circle class="ring r2" cx="150" cy="150" r="115"/>
+                    <!-- Ring 3 — 5 segments -->
+                    <circle class="ring r3" cx="150" cy="150" r="95"/>
+                    <!-- Ring 4 — innermost, 8 segments -->
+                    <circle class="ring r4" cx="150" cy="150" r="75"/>
+                </svg>
+
+                <!-- Scan sweep -->
+                <div class="reactor-scan"></div>
+
+                <!-- Energy pulse ring -->
+                <div class="energy-pulse"></div>
+
+                <!-- Core -->
+                <div class="reactor-core">
+                    <div class="core-inner"></div>
+                </div>
+
+                <!-- Orbiting particles -->
+                <div class="particles-container">
+                    <span class="particle" style="--i:0"></span>
+                    <span class="particle" style="--i:1"></span>
+                    <span class="particle" style="--i:2"></span>
+                    <span class="particle" style="--i:3"></span>
+                    <span class="particle" style="--i:4"></span>
+                    <span class="particle" style="--i:5"></span>
+                    <span class="particle" style="--i:6"></span>
+                    <span class="particle" style="--i:7"></span>
+                </div>
+
+                <!-- HUD corner brackets -->
+                <div class="hud-el hud-tl"></div>
+                <div class="hud-el hud-tr"></div>
+                <div class="hud-el hud-bl"></div>
+                <div class="hud-el hud-br"></div>
             </div>
-            <div id="status-text">Bereit</div>
+            <div id="status-text">SYSTEMS ONLINE</div>
         </div>
 
         <!-- Antwort-Bereich -->
