@@ -45,6 +45,73 @@ body {
     background: #44ff88;
 }
 
+/* --- Ambient Fullscreen Particles --- */
+
+#ambient-particles {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.amb {
+    position: absolute;
+    left: var(--x);
+    top: var(--y);
+    width: calc(var(--s) * 1px);
+    height: calc(var(--s) * 1px);
+    border-radius: 50%;
+    background: hsla(195, 100%, 70%, 0.35);
+    box-shadow: 0 0 calc(var(--s) * 2px) hsla(195, 100%, 60%, 0.25);
+    animation: amb-drift-1 calc(var(--d) * 1s) ease-in-out infinite alternate,
+               amb-fade calc(var(--d) * 0.7s) ease-in-out infinite alternate;
+}
+
+/* Even/odd variation via nth-child */
+.amb:nth-child(odd) {
+    animation-name: amb-drift-2, amb-fade;
+}
+
+@keyframes amb-drift-1 {
+    0%   { transform: translate(0, 0); }
+    100% { transform: translate(30px, -25px); }
+}
+
+@keyframes amb-drift-2 {
+    0%   { transform: translate(0, 0); }
+    100% { transform: translate(-20px, 20px); }
+}
+
+@keyframes amb-fade {
+    0%   { opacity: 0.15; }
+    100% { opacity: 0.6; }
+}
+
+/* Reactor states tint ambient particles too */
+#app:has(#reactor.listening) .amb {
+    background: hsla(150, 100%, 70%, 0.3);
+    box-shadow: 0 0 calc(var(--s) * 2px) hsla(150, 100%, 60%, 0.2);
+}
+
+#app:has(#reactor.thinking) .amb {
+    background: hsla(35, 100%, 70%, 0.3);
+    box-shadow: 0 0 calc(var(--s) * 2px) hsla(35, 100%, 60%, 0.2);
+}
+
+#app:has(#reactor.speaking) .amb {
+    background: hsla(210, 100%, 70%, 0.4);
+    box-shadow: 0 0 calc(var(--s) * 2px) hsla(210, 100%, 60%, 0.3);
+}
+
+#app:has(#reactor.searching) .amb {
+    background: hsla(270, 100%, 70%, 0.3);
+    box-shadow: 0 0 calc(var(--s) * 2px) hsla(270, 100%, 60%, 0.2);
+}
+
 /* --- Jarvis HUD Reactor --- */
 
 /* Animatable custom properties for smooth state transitions */
