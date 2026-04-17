@@ -13,7 +13,9 @@ _mqtt: mqtt.Client | None = None
 _mqtt_discovery_sent: bool = False
 
 
-def init(username: str, password: str, vin: str, mqtt_host: str = "192.167.178.110"):
+def init(username: str, password: str, vin: str,
+         mqtt_host: str = "192.167.178.110",
+         mqtt_user: str = "jarvis", mqtt_pass: str = "jarvis-mqtt-2026"):
     global _api, _vin, _mqtt
     _vin = vin
     try:
@@ -27,6 +29,7 @@ def init(username: str, password: str, vin: str, mqtt_host: str = "192.167.178.1
     # MQTT Verbindung
     try:
         _mqtt = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="jarvis-vw")
+        _mqtt.username_pw_set(mqtt_user, mqtt_pass)
         _mqtt.connect(mqtt_host, 1883, 60)
         _mqtt.loop_start()
         print(f"[vw] MQTT verbunden: {mqtt_host}", flush=True)
