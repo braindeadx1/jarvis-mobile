@@ -8,6 +8,7 @@ import asyncio
 import base64
 import json
 import os
+import random
 import re
 import time
 
@@ -297,6 +298,129 @@ async def broadcast_notification(text: str, speak: bool = True):
             })
         except Exception:
             active_clients.pop(sid, None)
+
+
+# ---------------------------------------------------------------------------
+# HUD Telemetry (Terminal-Feed fuer PWA)
+# ---------------------------------------------------------------------------
+
+_HUD_SCRIPTS = [
+    "SCANNING PERIMETER...",
+    "ALL SYSTEMS NOMINAL",
+    "REPULSOR ARRAY: STANDBY",
+    "THREAT ASSESSMENT: NONE DETECTED",
+    "NEURAL LINK: STABLE",
+    "POWER CELLS: OPTIMAL",
+    "ENCRYPTING COMM CHANNEL",
+    "DIAGNOSTIC CYCLE COMPLETE",
+    "AMBIENT TEMP NOMINAL",
+    "INITIATING PASSIVE SCAN",
+    "MEMORY ALLOCATION: STABLE",
+    "FIREWALL INTEGRITY: 100%",
+    "QUANTUM PROCESSOR: IDLE",
+    "SATELLITE UPLINK: ACTIVE",
+    "DEFENSE GRID: STANDBY",
+    "ARC REACTOR OUTPUT: NOMINAL",
+]
+
+
+async def collect_pve_telemetry() -> list[str]:
+    """PVE Cluster-Status per SSH von PVE1 holen."""
+    lines = []
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=4",
+            "root@192.167.178.6",
+            "pvesh get /cluster/resources --type node --output-format json 2>/dev/null",
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
+        )
+        stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=8)
+        nodes = json.loads(stdout.decode().strip())
+        for n in nodes:
+            if n.get("type") != "node":
+                continue
+            name = n.get("node", "?").upper()
+            status = n.get("status", "?").upper()
+            if status == "OFFLINE":
+                lines.append(f"NODE {name}: OFFLINE")
+            else:
+                cpu = round(n.get("cpu", 0) * 100, 1)
+                mem_gb = round(n.get("mem", 0) / 1073741824, 1)
+                max_gb = round(n.get("maxmem", 1) / 1073741824, 1)
+                lines.append(f"NODE {name}: {status} | CPU {cpu}% | RAM {mem_gb}/{max_gb} GB")
+    except Exception as e:
+        print(f"[hud] PVE error: {e}", flush=True)
+    return lines
+
+
+async def collect_ha_telemetry() -> list[str]:
+    """HA Sensor-Daten fuer HUD Terminal."""
+    if not HA_URL or not HA_TOKEN:
+        return []
+    lines = []
+    sensors = {
+        "sensor.shellyem3_244cab41b495_channel_a_power": "HAUS LEISTUNG",
+        "sensor.shellypro3em_wallbox_leistung": "WALLBOX",
+        "sensor.energypack_pack_power_import": "BATTERIE IMPORT",
+        "binary_sensor.wallbox_ladevorgang_aktiv": "LADEVORGANG",
+    }
+    headers = {"Authorization": f"Bearer {HA_TOKEN}"}
+    for entity, label in sensors.items():
+        try:
+            r = await http.get(f"{HA_URL}/api/states/{entity}", headers=headers, timeout=4)
+            if r.status_code == 200:
+                s = r.json()
+                state = s.get("state", "?")
+                unit = s.get("attributes", {}).get("unit_of_measurement", "")
+                if entity.startswith("binary_sensor"):
+                    state = "AKTIV" if state == "on" else "INAKTIV"
+                    lines.append(f"{label}: {state}")
+                else:
+                    val = round(float(state), 1) if state not in ("unknown", "unavailable") else "N/A"
+                    lines.append(f"{label}: {val} {unit}".strip())
+        except Exception:
+            pass
+    return lines
+
+
+async def hud_telemetry_loop():
+    """Periodisch Telemetrie sammeln und an alle PWA-Clients broadcasten."""
+    script_idx = 0
+    await asyncio.sleep(5)  # Startup abwarten
+    print("[jarvis] HUD telemetry loop gestartet", flush=True)
+    while True:
+        try:
+            await asyncio.sleep(12)
+            if not active_clients:
+                continue
+
+            lines = []
+            pve_data = await collect_pve_telemetry()
+            ha_data = await collect_ha_telemetry()
+            lines.extend(pve_data)
+            lines.extend(ha_data)
+
+            # Uptime einfuegen
+            uptime_h = round(time.monotonic() / 3600, 1)
+            lines.append(f"JARVIS UPTIME: {uptime_h} H")
+
+            # Scripted lines dazumischen
+            random.shuffle(lines)
+            for _ in range(2):
+                lines.insert(
+                    random.randint(0, max(len(lines), 1)),
+                    _HUD_SCRIPTS[script_idx % len(_HUD_SCRIPTS)]
+                )
+                script_idx += 1
+
+            for sid, ws_client in list(active_clients.items()):
+                try:
+                    await ws_client.send_json({"type": "telemetry", "lines": lines})
+                except Exception:
+                    active_clients.pop(sid, None)
+        except Exception as e:
+            print(f"[hud] loop error: {e}", flush=True)
+            await asyncio.sleep(30)
 
 
 # ---------------------------------------------------------------------------
@@ -623,11 +747,12 @@ FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
 
 @app.on_event("startup")
 async def startup():
-    """HA WebSocket starten fuer Live-Updates."""
+    """HA WebSocket + HUD Telemetry starten."""
     if ha:
         ha.on_state_change(on_ha_state_change)
         await ha.start_websocket()
         print("[jarvis] HA WebSocket gestartet — lausche auf Aenderungen", flush=True)
+    asyncio.create_task(hud_telemetry_loop())
 
 
 # ---------------------------------------------------------------------------

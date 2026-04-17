@@ -25,6 +25,7 @@ const cameraOverlay = document.getElementById("camera-overlay");
 const cameraPreview = document.getElementById("camera-preview");
 const btnCapture = document.getElementById("btn-capture");
 const btnCameraClose = document.getElementById("btn-camera-close");
+const hudLines = document.getElementById("hud-lines");
 
 // ===== WebSocket =====
 function connectWS() {
@@ -98,6 +99,30 @@ function handleMessage(data) {
       navigator.vibrate([100, 50, 100]);
     }
   }
+
+  if (data.type === "telemetry") {
+    renderHudLines(data.lines || []);
+  }
+}
+
+// ===== HUD Terminal =====
+const HUD_MAX_LINES = 7;
+
+function renderHudLines(lines) {
+  if (!hudLines) return;
+  hudLines.innerHTML = "";
+  const display = lines.slice(0, HUD_MAX_LINES);
+  display.forEach((text, i) => {
+    const div = document.createElement("div");
+    div.className = "hud-line" + (isDataLine(text) ? " data" : "");
+    div.textContent = "> " + text;
+    div.style.animationDelay = `${i * 80}ms`;
+    hudLines.appendChild(div);
+  });
+}
+
+function isDataLine(text) {
+  return /[\d%]|NODE|VM|CT|RUNNING|LEISTUNG|WALLBOX|BATTERIE|UPTIME|LADE/.test(text);
 }
 
 // ===== UI Updates =====
