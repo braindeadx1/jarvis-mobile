@@ -53,8 +53,11 @@ VW_USER = config.get("vw_username", "")
 VW_PASS = config.get("vw_password", "")
 VW_VIN = config.get("vw_vin", "")
 if VW_USER and VW_PASS and VW_VIN:
-    vw_telemetry.init(VW_USER, VW_PASS, VW_VIN)
-    print(f"[jarvis] VW WeConnect: VIN {VW_VIN}", flush=True)
+    try:
+        vw_telemetry.init(VW_USER, VW_PASS, VW_VIN)
+        print(f"[jarvis] VW WeConnect: VIN {VW_VIN}", flush=True)
+    except Exception as e:
+        print(f"[jarvis] VW WeConnect FEHLER: {e}", flush=True)
 
 # ---------------------------------------------------------------------------
 # Verfuegbare LLM-Modelle (mit OpenRouter-Preisen pro Million Tokens)
