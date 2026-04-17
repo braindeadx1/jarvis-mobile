@@ -52,6 +52,7 @@ CLAWBOT_WEBHOOK_SECRET = config.get("clawbot_webhook_secret", "jarvis-secret-202
 VW_USER = config.get("vw_username", "")
 VW_PASS = config.get("vw_password", "")
 VW_VIN = config.get("vw_vin", "")
+print(f"[jarvis] VW config: user={bool(VW_USER)} pass={bool(VW_PASS)} vin={bool(VW_VIN)}", flush=True)
 if VW_USER and VW_PASS and VW_VIN:
     try:
         vw_telemetry.init(VW_USER, VW_PASS, VW_VIN)
