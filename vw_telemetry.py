@@ -29,9 +29,9 @@ def init(username: str, password: str, vin: str, mqtt_host: str = "192.167.178.1
         _mqtt = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="jarvis-vw")
         _mqtt.connect(mqtt_host, 1883, 60)
         _mqtt.loop_start()
-        _log.info("[vw] MQTT verbunden: %s", mqtt_host)
+        print(f"[vw] MQTT verbunden: {mqtt_host}", flush=True)
     except Exception as e:
-        _log.error("[vw] MQTT Verbindung fehlgeschlagen: %s", e)
+        print(f"[vw] MQTT Fehler: {e}", flush=True)
         _mqtt = None
 
 
@@ -111,7 +111,7 @@ def _publish_discovery():
         _mqtt.publish(disc_topic, json.dumps(config), retain=True)
 
     _mqtt_discovery_sent = True
-    _log.info("[vw] MQTT Autodiscovery gesendet (%d Sensoren)", len(sensors))
+    print(f"[vw] MQTT Autodiscovery gesendet ({len(sensors)} Sensoren)", flush=True)
 
 
 def _publish_values(data: dict):
