@@ -20,6 +20,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 
 from home_assistant import HomeAssistantClient, DeviceRegistry, parse_ha_command
+import vw_telemetry
 
 # ---------------------------------------------------------------------------
 # Config
@@ -46,6 +47,14 @@ HA_TOKEN = config.get("ha_token", "")
 
 # ClawBot Webhook
 CLAWBOT_WEBHOOK_SECRET = config.get("clawbot_webhook_secret", "jarvis-secret-2026")
+
+# VW WeConnect
+VW_USER = config.get("vw_username", "")
+VW_PASS = config.get("vw_password", "")
+VW_VIN = config.get("vw_vin", "")
+if VW_USER and VW_PASS and VW_VIN:
+    vw_telemetry.init(VW_USER, VW_PASS, VW_VIN)
+    print(f"[jarvis] VW WeConnect: VIN {VW_VIN}", flush=True)
 
 # ---------------------------------------------------------------------------
 # Verfuegbare LLM-Modelle (mit OpenRouter-Preisen pro Million Tokens)
@@ -397,8 +406,10 @@ async def hud_telemetry_loop():
             lines = []
             pve_data = await collect_pve_telemetry()
             ha_data = await collect_ha_telemetry()
+            vw_data = await asyncio.to_thread(vw_telemetry.get_telemetry)
             lines.extend(pve_data)
             lines.extend(ha_data)
+            lines.extend(vw_data)
 
             # Uptime einfuegen
             uptime_h = round(time.monotonic() / 3600, 1)
