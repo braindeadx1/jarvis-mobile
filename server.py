@@ -48,17 +48,20 @@ HA_TOKEN = config.get("ha_token", "")
 # ClawBot Webhook
 CLAWBOT_WEBHOOK_SECRET = config.get("clawbot_webhook_secret", "jarvis-secret-2026")
 
-# VW WeConnect
-VW_USER = config.get("vw_username", "")
-VW_PASS = config.get("vw_password", "")
+# VW Telemetrie (Modi: "off" | "ha" | "weconnect", siehe vw_telemetry.py)
+VW_MODE = config.get("vw_mode", "off")
 VW_VIN = config.get("vw_vin", "")
-print(f"[jarvis] VW config: user={bool(VW_USER)} pass={bool(VW_PASS)} vin={bool(VW_VIN)}", flush=True)
-if VW_USER and VW_PASS and VW_VIN:
-    try:
-        vw_telemetry.init(VW_USER, VW_PASS, VW_VIN)
-        print(f"[jarvis] VW WeConnect: VIN {VW_VIN}", flush=True)
-    except Exception as e:
-        print(f"[jarvis] VW WeConnect FEHLER: {e}", flush=True)
+try:
+    vw_telemetry.init(
+        mode=VW_MODE,
+        vin=VW_VIN,
+        ha_url=HA_URL,
+        ha_token=HA_TOKEN,
+        vw_username=config.get("vw_username", ""),
+        vw_password=config.get("vw_password", ""),
+    )
+except Exception as e:
+    print(f"[jarvis] VW init FEHLER: {e}", flush=True)
 
 # ---------------------------------------------------------------------------
 # Verfuegbare LLM-Modelle (mit OpenRouter-Preisen pro Million Tokens)
